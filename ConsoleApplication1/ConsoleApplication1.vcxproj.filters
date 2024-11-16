@@ -23,5 +23,29 @@
     <ClInclude Include="regex.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="regex_builder.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="code.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="compile_context.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="match_data.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="error.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="captures.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="capture_locations.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
