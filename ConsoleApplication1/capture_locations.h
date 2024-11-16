@@ -17,7 +17,7 @@ struct CaptureLocations {
 		};
 	}
 
-	std::optional<std::tuple<size_t, size_t>> get(this const auto& self, size_t i)
+	std::optional<std::tuple<size_t, size_t>> get(this const CaptureLocations& self, size_t i)
 	{
 		auto ovec = self.data.ovector();
 		size_t index = i * 2;

@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include "regex_builder.h"
+#include <icu.h>
+
 // https://github.com/Homebrodot/Godot/blob/5eccbcefabba0f6ead2294877db3ff4a92ece068/modules/regex/regex.cpp#L374
 int main() {
     try {
@@ -63,13 +65,67 @@ int main() {
     return 0;
 }
 
-// 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
-// 调试程序: F5 或调试 >“开始调试”菜单
-
-// 入门使用技巧: 
-//   1. 使用解决方案资源管理器窗口添加/管理文件
-//   2. 使用团队资源管理器窗口连接到源代码管理
-//   3. 使用输出窗口查看生成输出和其他消息
-//   4. 使用错误列表窗口查看错误
-//   5. 转到“项目”>“添加新项”以创建新的代码文件，或转到“项目”>“添加现有项”以将现有代码文件添加到项目
-//   6. 将来，若要再次打开此项目，请转到“文件”>“打开”>“项目”并选择 .sln 文件
+//int containsRegionSensitive(const char* str, const char* substr, const char* locale) {
+//    UErrorCode status = U_ZERO_ERROR;
+//
+//    // Convert input C strings to Unicode (UChar)
+//    UChar* u_str = malloc(strlen(str) * sizeof(UChar) + 2);   // +2 for null-terminator
+//    UChar* u_substr = malloc(strlen(substr) * sizeof(UChar) + 2);
+//
+//    // Convert C string to UChar (UTF-16)
+//    int32_t str_len = ucnv_toUChars(NULL, u_str, strlen(str) + 1, str, strlen(str), &status);
+//    if (U_FAILURE(status)) {
+//        fprintf(stderr, "Error converting string to UChar\n");
+//        free(u_str);
+//        free(u_substr);
+//        return 0;
+//    }
+//
+//    int32_t substr_len = ucnv_toUChars(NULL, u_substr, strlen(substr) + 1, substr, strlen(substr), &status);
+//    if (U_FAILURE(status)) {
+//        fprintf(stderr, "Error converting substring to UChar\n");
+//        free(u_str);
+//        free(u_substr);
+//        return 0;
+//    }
+//
+//    // Create a Collator for the given locale
+//    UCollator* coll = ucol_open(locale, &status);
+//    if (U_FAILURE(status)) {
+//        fprintf(stderr, "Error creating collator for locale %s\n", locale);
+//        free(u_str);
+//        free(u_substr);
+//        return 0;
+//    }
+//
+//    // Use u_strstr to check if the substring exists in the main string (using Collator for region-sensitive compare)
+//    UChar* found = u_strstr(u_str, u_substr);
+//    while (found != NULL) {
+//        // Compare the region-sensitive order of the substring with the main string
+//       
+//        if (auto result = ucol_greaterOrEqual(coll, u_str, -1, u_substr, -1)) {
+//            fprintf(stderr, "Error comparing strings with collator\n");
+//            ucol_close(coll);
+//            free(u_str);
+//            free(u_substr);
+//            return 0;
+//        }
+//
+//        // If result is EQUAL, it means substring is found, region-sensitive
+//        if (result == UCOL_EQUAL) {
+//            ucol_close(coll);
+//            free(u_str);
+//            free(u_substr);
+//            return 1;
+//        }
+//
+//        // Move to the next possible occurrence of the substring
+//        found = u_strstr(found + 1, u_substr); // continue searching from the next position
+//    }
+//
+//    // Clean up and return 0 if substring is not found
+//    ucol_close(coll);
+//    free(u_str);
+//    free(u_substr);
+//    return 0;
+//}
