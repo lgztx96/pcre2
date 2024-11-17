@@ -193,11 +193,19 @@ namespace pcre2 {
 
 			uint32_t options = 0;
 			// SAFETY: We don't use any dangerous PCRE2 options.
-			if (!*match_data->find(self.code.get(), subject, start, options)) {
-				return std::nullopt;
-			}
-			auto ovector = match_data->ovector();
-			return Match(subject.data(), ovector[0], ovector[1]);
+			return match_data->find(
+				self.code.get(),
+				subject,
+				start,
+				options)
+				.transform([&](bool b) -> std::optional<Match>
+					{
+						if (b) {
+							auto ovector = match_data->ovector();
+							return std::make_optional<Match>(subject.data(), ovector[0], ovector[1]);
+						}
+						return {};
+					});
 		}
 
 		/// Returns the same as `captures_read`, but starts the search at the given
@@ -221,12 +229,19 @@ namespace pcre2 {
 
 			uint32_t options = 0;
 			// SAFETY: We don't use any dangerous PCRE2 options.
-			if (!*locs.data->find(self.code.get(), subject, start, options)) {
-				return std::nullopt;
-			}
-			auto ovector = locs.data->ovector();
-
-			return Match(subject.data(), ovector[0], ovector[1]);
+			return locs.data->find(
+				self.code.get(), 
+				subject, 
+				start, 
+				options)
+			.transform([&](bool b) -> std::optional<Match>
+				{
+					if (b) {
+						auto ovector = locs.data->ovector();
+						return std::make_optional<Match>(subject.data(), ovector[0], ovector[1]);
+					}
+					return {};
+				});
 		}
 
 		static inline auto jit_compile(std::wstring_view pattern) -> std::expected<wregex, Error>
@@ -427,7 +442,6 @@ namespace pcre2 {
 
 				~iterator() = default;
 
-
 			private:
 				Matches* matches;
 				std::optional<std::expected<Match, Error>> current;
@@ -440,10 +454,13 @@ namespace pcre2 {
 
 			auto end() { return iterator(this); };
 
-			auto next(this Matches& self) -> std::optional<std::expected<Match, Error>> {
-				if (self.last_end > self.subject.size()) {
+			auto next(this Matches& self) -> std::optional<std::expected<Match, Error>>
+			{
+				if (self.last_end > self.subject.size())
+				{
 					return std::nullopt;
 				}
+
 				auto res = self.re.find_at_with_match_data(
 					self.match_data,
 					self.subject,
@@ -597,10 +614,6 @@ namespace pcre2 {
 			}
 		};
 
-		//inline std::optional<Match> find(std::wstring_view subject) const { return find_at(subject, 0); }
-
-		//using match_data_ptr = std::unique_ptr<pcre2_match_data_16, decltype(&pcre2_match_data_free_16)>;
-
 		//// 查找第一个匹配项
 		//std::optional<Match> find_at(std::wstring_view subject, size_t offset) const {
 		//    PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
@@ -638,7 +651,7 @@ namespace pcre2 {
 			auto match_data = self.match_data.get();
 			auto res =
 				self.find_at_with_match_data(match_data, subject, start);
-			//PoolGuard::put(match_data);
+			MatchDataPoolGuard::put(match_data);
 			return res;
 		}
 
