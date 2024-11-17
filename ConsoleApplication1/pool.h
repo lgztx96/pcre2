@@ -76,7 +76,7 @@ namespace inner
 	/// available. This state is useful for avoiding a case where the owner
 	/// of a pool calls `get` before putting the result of a previous `get`
 	/// call back into the pool.
-	static size_t THREAD_ID_INUSE = 1;
+	static constexpr size_t THREAD_ID_INUSE = 1;
 
 	/// This sentinel is used to indicate that a guard has already been dropped
 	/// and should not be re-dropped. We use this because our drop code can be
@@ -88,7 +88,7 @@ namespace inner
 	/// So this isn't strictly necessary, but this let's us define some
 	/// routines as safe (like PoolGuard::put_imp) that we couldn't otherwise
 	/// do.
-	static size_t THREAD_ID_DROPPED = 2;
+	static constexpr size_t THREAD_ID_DROPPED = 2;
 
 	/// The number of stacks we use inside of the pool. These are only used for
 	/// non-owners. That is, these represent the "slow" path.
@@ -146,7 +146,7 @@ namespace inner
 	///
 	/// See this issue for more context and discussion:
 	/// https://github.com/rust-lang/regex/issues/934
-	const size_t MAX_POOL_STACKS = 8;
+	const constexpr size_t MAX_POOL_STACKS = 8;
 
 	//thread_local!(
 		/// A thread local used to assign an ID to a thread.
@@ -424,14 +424,14 @@ namespace inner
 			}
 		};
 
-		Pool(F create)
+		Pool(F create) : owner(THREAD_ID_UNOWNED)
 		{
 			// MSRV(1.63): Mark this function as 'const'. I've arranged the
 			// code such that it should "just work." Then mark the public
 			// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
 			// is already 'const', so that should "just work" too.) The only
 			// thing we're waiting for is Mutex::new to be const.
-			std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
+
 			stacks.reserve(MAX_POOL_STACKS);
 
 			for (size_t i = 0; i < stacks.capacity(); i++)
@@ -440,9 +440,6 @@ namespace inner
 			}
 
 			this->create = create;
-			this->stacks = std::move(stacks);
-			owner = THREAD_ID_UNOWNED;
-			owner_val = std::nullopt;
 		}
 
 		//static auto new1(F create) -> Pool<T, F>

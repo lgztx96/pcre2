@@ -65,7 +65,7 @@ struct Code {
 
 		auto name_count = *self.name_count();
 		auto size = *self.name_entry_size();
-		std::span<const wchar_t> table(reinterpret_cast<const wchar_t*>(*self.raw_name_table()), name_count * size);
+		std::span<const wchar_t> table(std::bit_cast<const wchar_t*>(*self.raw_name_table()), name_count * size);
 
 		auto names = std::vector<std::wstring>();
 		names.resize(*self.capture_count());
@@ -79,7 +79,7 @@ struct Code {
 				 .expect("a NUL in name table entry");*/
 				 // auto index = (static_cast<size_t>(entry[0]) << 8 | static_cast<size_t>(entry[1]));
 			auto index = static_cast<uint32_t>(entry[0]);
-			names[index] = std::wstring(reinterpret_cast<const wchar_t*>(name.data()), nulat);
+			names[index] = std::wstring(std::bit_cast<const wchar_t*>(name.data()), nulat);
 			//.map(Some)
 			// We require our pattern to be valid UTF-8, so all capture
 			// names should also be valid UTF-8.
