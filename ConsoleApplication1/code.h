@@ -19,11 +19,11 @@ struct Code {
 		pcre2_code_free_16(code);
 	}
 
-	static std::expected<std::unique_ptr<Code>, Error> make(
+	static auto make(
 		std::wstring_view pattern,
 		uint32_t options,
 		std::unique_ptr<CompileContext> ctx
-	) {
+	) -> std::expected<std::unique_ptr<Code>, Error> {
 		int error_code = 0;
 		size_t error_offset = 0;
 		auto code =
@@ -43,7 +43,8 @@ struct Code {
 		}
 	}
 
-	auto jit_compile(this Code& self) -> std::expected<void, Error> {
+	auto jit_compile(this Code& self) -> std::expected<void, Error>
+	{
 		auto error_code = pcre2_jit_compile_16(self.code, PCRE2_JIT_COMPLETE);
 		if (error_code == 0) {
 			self.compiled_jit = true;
@@ -54,7 +55,8 @@ struct Code {
 		}
 	}
 
-	std::vector<std::wstring> capture_names(this const Code& self) {
+	auto capture_names(this const Code& self) -> std::vector<std::wstring>
+	{
 		// This is an object lesson in why C sucks. All we need is a map from
 		// a name to a number, but we need to go through all sorts of
 		// shenanigans to get it. In order to verify this code, see

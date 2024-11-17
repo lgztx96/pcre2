@@ -63,7 +63,8 @@ struct Error {
 		return { reinterpret_cast<const wchar_t*>(buf.data()) };
 	}
 
-	const wchar_t* description() {
+	inline const wchar_t* description()
+	{
 		return L"pcre2 error";
 	}
 };

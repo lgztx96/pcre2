@@ -6,27 +6,36 @@
 #include <optional>
 #include <pcre2.h>
 
-struct CaptureLocations {
+struct CaptureLocations 
+{
 	Code* code;
-	MatchData data;
+	std::unique_ptr<MatchData> data;
 
-	CaptureLocations clone(this const CaptureLocations& self) {
-		return CaptureLocations{
-			 .code = self.code,
-			 .data = MatchData::get(self.data.config, *self.code)
-		};
-	}
+	CaptureLocations(Code* code, std::unique_ptr<MatchData> data) : code(code), data(std::move(data)) {}
 
-	std::optional<std::tuple<size_t, size_t>> get(this const CaptureLocations& self, size_t i)
+	CaptureLocations(const CaptureLocations& r) = delete;
+
+	CaptureLocations(CaptureLocations&& r) noexcept : code(r.code), data(std::move(r.data)) {};
+
+	CaptureLocations operator=(CaptureLocations&& r) noexcept
 	{
-		auto ovec = self.data.ovector();
+		return CaptureLocations(std::move(r));
+	};
+
+	auto get(this const CaptureLocations& self, size_t i) noexcept -> std::optional<std::tuple<size_t, size_t>>
+	{
+		auto ovec = self.data->ovector();
 		size_t index = i * 2;
-		if (index < ovec.size()) {
-			if (auto s = ovec[index]; s != PCRE2_UNSET) {
+		if (index < ovec.size()) 
+		{
+			if (auto s = ovec[index]; s != PCRE2_UNSET)
+			{
 				index = i * 2 + 1;
-				if (index < ovec.size()) {
-					if (auto e = ovec[index]; e != PCRE2_UNSET) {
-						return std::make_tuple(s, e);
+				if (index < ovec.size()) 
+				{
+					if (auto e = ovec[index]; e != PCRE2_UNSET)
+					{
+						return std::make_optional<std::tuple<size_t, size_t>>(s, e);
 					}
 				}
 			}
@@ -35,8 +44,8 @@ struct CaptureLocations {
 		return std::nullopt;
 	}
 
-	size_t len(this const CaptureLocations& self)
+	inline auto len(this const CaptureLocations& self) -> size_t
 	{
-		return self.data.ovector().size() / 2;
+		return self.data->ovector().size() / 2;
 	}
 };

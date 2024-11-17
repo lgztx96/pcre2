@@ -2,7 +2,8 @@
 #include <optional>
 #include <string_view>
 
-enum class JITChoice {
+enum class JITChoice 
+{
 	/// Never do JIT compilation.
 	Never,
 	/// Always do JIT compilation and return an error if it fails.
@@ -11,7 +12,8 @@ enum class JITChoice {
 	Attempt,
 };
 
-struct MatchConfig {
+struct MatchConfig
+{
 	/// When set, a custom JIT stack will be created with the given maximum
 	/// size.
 	std::optional<size_t> max_jit_stack_size;
@@ -52,12 +54,23 @@ struct Config {
 
 struct Match
 {
-	std::wstring_view subject;
+	const wchar_t* subject;
+	//std::wstring_view subject;
 	size_t start;
 	size_t end;
 
-	auto as_bytes(this const Match& self) -> std::wstring_view
+	auto as_view(this const Match& self) noexcept -> std::wstring_view
 	{
-		return self.subject.substr(self.start, self.end - self.start);
+		return std::wstring_view(self.subject + self.start, self.end - self.start);
+	}
+	
+	auto suffix(this const Match& self) noexcept -> std::wstring_view
+	{
+		return std::wstring_view(self.subject, self.start);
+	}
+
+	auto prefix(this const Match& self) noexcept -> std::wstring_view
+	{
+		return std::wstring_view(self.subject + self.end);
 	}
 };

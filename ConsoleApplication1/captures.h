@@ -7,9 +7,19 @@
 
 struct Captures
 {
-	std::wstring_view subject;
+	const wchar_t* subject;
 	CaptureLocations locs;
 	const std::map<std::wstring, size_t, std::less<void>>* idx;
+
+	Captures(
+		const wchar_t* subject, 
+		CaptureLocations locs, 
+		const std::map<std::wstring, size_t, std::less<void>>* idx)
+		: subject(subject), locs(std::move(locs)), idx(idx) {};
+
+	Captures(const Captures& c) = delete;
+	Captures(Captures&& c) : subject(c.subject), locs(std::move(c.locs)), idx(c.idx) {};
+	Captures operator=(Captures&& c) { return Captures(std::move(c)); };
 
 	auto get(this const Captures& self, size_t i) -> std::optional<Match>
 	{
@@ -27,14 +37,14 @@ struct Captures
 	auto operator[](this const Captures& self, int i) -> std::wstring_view
 	{
 		return self.get(i)
-			.transform([](const auto& m) { return m.as_bytes(); }).value();
+			.transform([](const auto& m) { return m.as_view(); }).value();
 		//.unwrap_or_else(|| panic!("no group at index '{}'", i));
 	}
 
 	auto operator[](this const Captures& self, const wchar_t* name) -> std::wstring_view
 	{
 		return self.name(name)
-			.transform([](const auto& m) { return m.as_bytes(); }).value();
+			.transform([](const auto& m) { return m.as_view(); }).value();
 		//.unwrap_or_else(|| panic!("no group at index '{}'", i));
 	}
 

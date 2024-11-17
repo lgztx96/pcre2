@@ -3,66 +3,80 @@
 
 #include <iostream>
 #include "regex_builder.h"
-#include <icu.h>
+#include "regex.h"
+#include <print>
+#include <boost/regex.hpp>
 
 // https://github.com/Homebrodot/Godot/blob/5eccbcefabba0f6ead2294877db3ff4a92ece068/modules/regex/regex.cpp#L374
-int main() {
-    try {
+int main() 
+{
+	
+	try {
 
-        // 使用UTF-16编码的字符串创建Regex对象
-        auto builder = RegexBuilder{};
-        builder.jit_if_available(true);
-        const auto& regex = builder.build(L"(?P<year>\\d+)-(?P<month>\\d+)-(?P<day>\\d+)");  // 这是一个简单的匹配任意字母的正则表达式
-        std::wstring text = L"2024-05-23 2025-06-27";
+		const auto regex = pcre2::wregex::jit_compile(L"(\\d+)-(\\d+)-(\\d+)");
+		constexpr auto text = L"2024-05-23 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27";
 
-        // 检查是否匹配
-        if (auto rc = regex->is_match(text); rc && *rc) {
-            std::wcout << L"Pattern matches the text!" << std::endl;
-        }
-        else {
-            std::wcout << L"Pattern does not match the text." << std::endl;
-        }
+		boost::wregex re(L"(\\d+)-(\\d+)-(\\d+)");
 
-        // 查找第一个匹配项
+		auto start = std::chrono::high_resolution_clock::now();
 
-        if (auto match = regex->find(text); match.has_value() && match->has_value()) {
-           // std::wcout << L"First match: " << text.substr((*match)->start, (*match)->end - (*match)->start) << std::endl;
-        }
-        else {
-            std::wcout << L"No match found!" << std::endl;
-        }
+		for (auto i = 0; i < 100000; i++)
+		{
+			auto rc = regex->is_match_at(text, 0).value();
+		}
 
-        auto m = regex->captures_iter(text);
+		auto end = std::chrono::high_resolution_clock::now();
 
-        for (const auto& v : m) {
-            if (v) {
-                auto k = (*v)[L"year"];
-                auto k1 = (*v)[L"month"];
-                auto k2 = (*v)[L"day"];
-                //std::wcout << L"First match: " << v->subject.substr(v->start, v->end - v->start) << std::endl;
-                std::wcout << L"First match: " << k << std::endl;
-                std::wcout << L"First match: " << k1 << std::endl;
-                std::wcout << L"First match: " << k2 << std::endl;
-            }
-        }
+		auto c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-        //while (auto v = m.next()) {
-        //    if (*v) {
-        //        std::wcout << L"First match: " << (*v)->subject.substr((*v)->start, (*v)->end - (*v)->start) << std::endl;
-        //    }
-        //}
+		std::println("pcre {} ms", c);
+		start = std::chrono::high_resolution_clock::now();
 
-        // 替换第一个匹配项
-        std::wstring replaced;
-        //if (regex.replace(text, L"Replaced", replaced)) {
-        //    std::wcout << L"Text after replace: " << replaced << std::endl;
-        //}
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-    }
+		for (auto i = 0; i < 100000; i++)
+		{
+			auto k = boost::regex_search(text, re);
+		}
+		end = std::chrono::high_resolution_clock::now();
+		c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-    return 0;
+		std::println("boost {}ms", c);
+		return 0;
+		boost::wsmatch match;
+
+		if (auto rc = regex->is_match(text); rc && *rc) {
+			std::wcout << L"Pattern matches the text!" << std::endl;
+		}
+		else {
+			std::wcout << L"Pattern does not match the text." << std::endl;
+		}
+
+		if (auto match = regex->find(text); match.has_value() && match->has_value()) {
+			// std::wcout << L"First match: " << text.substr((*match)->start, (*match)->end - (*match)->start) << std::endl;
+		}
+		else {
+			std::wcout << L"No match found!" << std::endl;
+		}
+
+		auto m = regex->captures_iter(text);
+
+		for (const auto& v : m) {
+			if (v) {
+				auto k = (*v)[L"year"];
+				auto k1 = (*v)[L"month"];
+				auto k2 = (*v)[L"day"];
+				//std::wcout << L"First match: " << v->subject.substr(v->start, v->end - v->start) << std::endl;
+				std::wcout << L"First match: " << k << std::endl;
+				std::wcout << L"First match: " << k1 << std::endl;
+				std::wcout << L"First match: " << k2 << std::endl;
+			}
+		}
+
+	}
+	catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
+
+	return 0;
 }
 
 //int containsRegionSensitive(const char* str, const char* substr, const char* locale) {

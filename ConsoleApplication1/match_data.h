@@ -9,23 +9,37 @@ struct MatchData
 	const size_t* ovector_ptr;
 	uint32_t ovector_count;
 
-	/// Create a new match data block from a compiled PCRE2 code object.
-	///
-	/// This panics if memory could not be allocated for the block.
-	static MatchData get(MatchConfig config, Code& code) {
-		auto match_context = pcre2_match_context_create_16(nullptr);
+	MatchData(const MatchData&) = delete;
+	MatchData operator=(const MatchData&) = delete;
+
+	MatchData(MatchData&& other) noexcept
+		: config(other.config)
+		, match_context(other.match_context)
+		, match_data(other.match_data)
+		, jit_stack(other.jit_stack)
+		, ovector_ptr(other.ovector_ptr)
+		, ovector_count(other.ovector_count)
+	{
+		other.match_context = nullptr;
+		other.match_data = nullptr;
+		other.jit_stack = nullptr;
+	}
+
+	MatchData(MatchConfig config, const Code* code) : config(config)
+	{
+		match_context = pcre2_match_context_create_16(nullptr);
 		assert(match_context, "failed to allocate match context");
 
-		auto match_data = pcre2_match_data_create_from_pattern_16(
-			code.as_ptr(),
+		match_data = pcre2_match_data_create_from_pattern_16(
+			code->as_ptr(),
 			nullptr);
 		assert(match_data, "failed to allocate match data block");
 
-		auto jit_stack = [&](const std::optional<size_t>& max) -> std::optional<pcre2_jit_stack_16*> {
-			if (!code.compiled_jit) {
+		jit_stack = [&]() -> std::optional<pcre2_jit_stack_16*> {
+			if (!code->compiled_jit) {
 				return std::nullopt;
 			}
-			if (max) {
+			if (const auto& max = config.max_jit_stack_size) {
 				auto stack = pcre2_jit_stack_create_16(
 					std::min<size_t>(*max, static_cast<size_t>(32 * 1) << 10),
 					*max,
@@ -42,20 +56,68 @@ struct MatchData
 			}
 
 			return std::nullopt;
-			}(config.max_jit_stack_size);
+			}();
 
-		auto ovector_ptr = pcre2_get_ovector_pointer_16(match_data);
+		ovector_ptr = pcre2_get_ovector_pointer_16(match_data);
 		assert(ovector_ptr, "got NULL ovector pointer");
-		auto ovector_count = pcre2_get_ovector_count_16(match_data);
-		return MatchData{
-			config,
-			match_context,
-			match_data,
-			jit_stack,
-			ovector_ptr,
-			ovector_count,
-		};
+		ovector_count = pcre2_get_ovector_count_16(match_data);
 	}
+
+	~MatchData() 
+	{
+		if (auto& stack = jit_stack) 
+		{
+			pcre2_jit_stack_free_16(*stack);
+		}
+		pcre2_match_data_free_16(match_data);
+		pcre2_match_context_free_16(match_context);
+	}
+
+	//static auto create(MatchConfig config, const Code* code) -> MatchData
+	//{
+	//	auto match_context = pcre2_match_context_create_16(nullptr);
+	//	assert(match_context, "failed to allocate match context");
+
+	//	auto match_data = pcre2_match_data_create_from_pattern_16(
+	//		code->as_ptr(),
+	//		nullptr);
+	//	assert(match_data, "failed to allocate match data block");
+
+	//	auto jit_stack = [&]() -> std::optional<pcre2_jit_stack_16*> {
+	//		if (!code->compiled_jit) {
+	//			return std::nullopt;
+	//		}
+	//		if (const auto& max = config.max_jit_stack_size) {
+	//			auto stack = pcre2_jit_stack_create_16(
+	//				std::min<size_t>(*max, static_cast<size_t>(32 * 1) << 10),
+	//				*max,
+	//				nullptr
+	//			);
+	//			assert(!stack, "failed to allocate JIT stack");
+
+	//			pcre2_jit_stack_assign_16(
+	//				match_context,
+	//				nullptr,
+	//				stack
+	//			);
+	//			return stack;
+	//		}
+
+	//		return std::nullopt;
+	//	}();
+
+	//	auto ovector_ptr = pcre2_get_ovector_pointer_16(match_data);
+	//	assert(ovector_ptr, "got NULL ovector pointer");
+	//	auto ovector_count = pcre2_get_ovector_count_16(match_data);
+	//	return MatchData{
+	//		config,
+	//		match_context,
+	//		match_data,
+	//		jit_stack,
+	//		ovector_ptr,
+	//		ovector_count,
+	//	};
+	//}
 
 	/// Execute PCRE2's primary match routine on the given subject string
 	/// starting at the given offset. The provided options are passed to PCRE2
@@ -72,13 +134,13 @@ struct MatchData
 	/// behavior when not used correctly. For example, if PCRE2_NO_UTF_CHECK
 	/// is given and UTF mode is enabled and the given subject string is not
 	/// valid UTF-8, then the result is undefined.
-	std::expected<bool, Error> find(
-		this MatchData& self,
+	auto find(
+		this const MatchData& self,
 		const Code* code,
 		std::wstring_view subject,
 		size_t start,
 		uint32_t options
-	) {
+	) -> std::expected<bool, Error> {
 		// When the subject is empty, we use an NON-empty slice with a known
 		// valid pointer. Otherwise, slices derived from, e.g., an empty
 		// `Vec<u8>` may not have a valid pointer, since creating an empty
@@ -106,7 +168,7 @@ struct MatchData
 
 		auto rc = pcre2_match_16(
 			code->as_ptr(),
-			reinterpret_cast<PCRE2_SPTR16>(subject.data()),
+			std::bit_cast<PCRE2_SPTR16>(subject.data()),
 			len,
 			start,
 			options,
@@ -129,7 +191,7 @@ struct MatchData
 	}
 
 	/// Return a mutable reference to the underlying match data.
-	inline pcre2_match_data_16* as_mut_ptr(this const auto& self)
+	inline auto as_mut_ptr(this const MatchData& self) -> pcre2_match_data_16*
 	{
 		return self.match_data;
 	}
@@ -146,6 +208,6 @@ struct MatchData
 		// here is whether the contents of the ovector are always initialized.
 		// The PCRE2 documentation suggests that they are (so does testing),
 		// but this isn't actually 100% clear!
-		return std::span<const size_t>(self.ovector_ptr, (size_t)self.ovector_count * 2);
+		return std::span<const size_t>(self.ovector_ptr, self.ovector_count * 2);
 	}
 };

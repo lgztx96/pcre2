@@ -27,7 +27,7 @@ struct CompileContext
 	/// Valid values are: PCRE2_NEWLINE_CR, PCRE2_NEWLINE_LF,
 	/// PCRE2_NEWLINE_CRLF, PCRE2_NEWLINE_ANYCRLF, PCRE2_NEWLINE_ANY or
 	/// PCRE2_NEWLINE_NUL. Using any other value results in an error.
-	std::expected<void, Error> set_newline(this const CompileContext& self, uint32_t value)
+	auto set_newline(this const CompileContext& self, uint32_t value) -> std::expected<void, Error>
 	{
 		auto rc = pcre2_set_newline_16(self.context, value);
 		if (rc == 0) {
@@ -38,7 +38,7 @@ struct CompileContext
 		}
 	}
 
-	inline pcre2_compile_context_16* as_mut_ptr(this const CompileContext& self)
+	inline auto as_mut_ptr(this const CompileContext& self) -> pcre2_compile_context_16*
 	{
 		return self.context;
 	}
