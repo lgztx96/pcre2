@@ -10,10 +10,8 @@
 // https://github.com/Homebrodot/Godot/blob/5eccbcefabba0f6ead2294877db3ff4a92ece068/modules/regex/regex.cpp#L374
 int main() 
 {
-	
-	try {
-		auto k = sizeof inner::CacheLine<inner::Mutex<std::vector<std::unique_ptr<MatchData>>>>;
-		std::println("{}\n", k);
+	try 
+	{
 		const auto regex = pcre2::wregex::jit_compile(L"(\\d+)-(\\d+)-(\\d+)");
 		constexpr auto text = L"2024-05-23 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27";
 
