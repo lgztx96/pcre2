@@ -12,19 +12,6 @@ struct MatchData
 	MatchData(const MatchData&) = delete;
 	MatchData operator=(const MatchData&) = delete;
 
-	MatchData(MatchData&& other) noexcept
-		: config(other.config)
-		, match_context(other.match_context)
-		, match_data(other.match_data)
-		, jit_stack(other.jit_stack)
-		, ovector_ptr(other.ovector_ptr)
-		, ovector_count(other.ovector_count)
-	{
-		other.match_context = nullptr;
-		other.match_data = nullptr;
-		other.jit_stack = nullptr;
-	}
-
 	MatchData(MatchConfig config, const Code* code) : config(config)
 	{
 		match_context = pcre2_match_context_create_16(nullptr);
@@ -72,52 +59,6 @@ struct MatchData
 		pcre2_match_data_free_16(match_data);
 		pcre2_match_context_free_16(match_context);
 	}
-
-	//static auto create(MatchConfig config, const Code* code) -> MatchData
-	//{
-	//	auto match_context = pcre2_match_context_create_16(nullptr);
-	//	assert(match_context, "failed to allocate match context");
-
-	//	auto match_data = pcre2_match_data_create_from_pattern_16(
-	//		code->as_ptr(),
-	//		nullptr);
-	//	assert(match_data, "failed to allocate match data block");
-
-	//	auto jit_stack = [&]() -> std::optional<pcre2_jit_stack_16*> {
-	//		if (!code->compiled_jit) {
-	//			return std::nullopt;
-	//		}
-	//		if (const auto& max = config.max_jit_stack_size) {
-	//			auto stack = pcre2_jit_stack_create_16(
-	//				std::min<size_t>(*max, static_cast<size_t>(32 * 1) << 10),
-	//				*max,
-	//				nullptr
-	//			);
-	//			assert(!stack, "failed to allocate JIT stack");
-
-	//			pcre2_jit_stack_assign_16(
-	//				match_context,
-	//				nullptr,
-	//				stack
-	//			);
-	//			return stack;
-	//		}
-
-	//		return std::nullopt;
-	//	}();
-
-	//	auto ovector_ptr = pcre2_get_ovector_pointer_16(match_data);
-	//	assert(ovector_ptr, "got NULL ovector pointer");
-	//	auto ovector_count = pcre2_get_ovector_count_16(match_data);
-	//	return MatchData{
-	//		config,
-	//		match_context,
-	//		match_data,
-	//		jit_stack,
-	//		ovector_ptr,
-	//		ovector_count,
-	//	};
-	//}
 
 	/// Execute PCRE2's primary match routine on the given subject string
 	/// starting at the given offset. The provided options are passed to PCRE2

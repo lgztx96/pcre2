@@ -178,10 +178,10 @@ namespace inner
 		/// problem by causing "false sharing." By putting each mutex in its own
 		/// cache-line, we avoid the false sharing problem and the affects of
 		/// contention are greatly reduced.
-		//#[repr(C, align(64))]
-#pragma pack（64）
+
+
 	template<typename T>
-	struct CacheLine
+	struct __declspec(align(64)) CacheLine
 	{
 		T value;
 	};
@@ -191,11 +191,29 @@ namespace inner
 	{
 	public:
 
-		Mutex() : contents(new T), m(new M()) {}
+		Mutex() : contents(new T()), m(new M()) {}
+
+		Mutex(const Mutex& other) = delete;
+		Mutex operator=(const Mutex& other) = delete;
+
+		Mutex(Mutex&& other) : contents(other.contents), m(other.m)
+		{
+			other.contents = nullptr;
+			other.m = nullptr;
+		}
+
+		Mutex operator=(Mutex&& other)
+		{
+			return std::move(other);
+		}
 
 		//template <typename... Args>
 		//Mutex(Args&&... args) : contents(new T(std::forward<Args>(args)...)), m(new M()) {}
-		~Mutex() { delete m; delete contents;  }
+		~Mutex()
+		{
+			delete m;
+			delete contents;
+		}
 
 		struct Locker
 		{
@@ -224,42 +242,6 @@ namespace inner
 		T* contents;
 		M* m;
 	};
-
-	//template<typename T>
-	//class Mutex {
-	//public:
-	//	Mutex& operator=(const T& t) {
-	//		std::lock_guard<std::mutex> lk(m_mutex);
-	//		value = t;
-	//		return *this;
-	//	}
-
-	//	operator T() const {
-	//		std::lock_guard<std::mutex> lk(m_mutex);
-	//		return value;
-	//	}
-
-	//	Mutex(T v) : value(v) {}
-
-	//	std::optional<T> try_lock() 
-	//	{
-	//		if (m_mutex.try_lock()) {
-	//			return value;
-	//		}
-	//		return std::nullopt;
-	//	}
-
-	//	T& lock()
-	//	{
-	//		std::lock_guard<std::mutex> lk(m_mutex);
-	//		return value;
-	//	}
-
-	//	/* other stuff */
-	//private:
-	//	mutable std::mutex m_mutex;
-	//	T value;
-	//};
 
 	/// A thread safe pool utilizing std-only features.
 	///
@@ -345,7 +327,7 @@ namespace inner
 				//}
 			}
 
-			auto value_mut(this PoolGuard& self) -> T&
+			auto value_mut(this const PoolGuard& self) -> T&
 			{
 				if (self.v)
 				{
@@ -388,7 +370,6 @@ namespace inner
 				//auto v = core::mem::ManuallyDrop::new(value);
 				value.put_imp();
 			}
-
 
 			inline void put_imp(this PoolGuard& self)
 			{
@@ -443,201 +424,201 @@ namespace inner
 			}
 		};
 
-	Pool(F create)
-	{
-		// MSRV(1.63): Mark this function as 'const'. I've arranged the
-		// code such that it should "just work." Then mark the public
-		// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
-		// is already 'const', so that should "just work" too.) The only
-		// thing we're waiting for is Mutex::new to be const.
-		std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
-		stacks.reserve(MAX_POOL_STACKS);
-
-		for (size_t i = 0; i < stacks.capacity(); i++)
+		Pool(F create)
 		{
-			stacks.emplace_back(Mutex<std::vector<std::unique_ptr<T>>>());
+			// MSRV(1.63): Mark this function as 'const'. I've arranged the
+			// code such that it should "just work." Then mark the public
+			// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
+			// is already 'const', so that should "just work" too.) The only
+			// thing we're waiting for is Mutex::new to be const.
+			std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
+			stacks.reserve(MAX_POOL_STACKS);
+
+			for (size_t i = 0; i < stacks.capacity(); i++)
+			{
+				stacks.emplace_back(Mutex<std::vector<std::unique_ptr<T>>>());
+			}
+
+			this->create = create;
+			this->stacks = std::move(stacks);
+			owner = THREAD_ID_UNOWNED;
+			owner_val = std::nullopt;
 		}
 
-		this->create = create;
-		this->stacks = std::move(stacks);
-		owner = THREAD_ID_UNOWNED;
-		owner_val = std::nullopt;
-	}
+		//static auto new1(F create) -> Pool<T, F>
+		//{
+		//	// MSRV(1.63): Mark this function as 'const'. I've arranged the
+		//	// code such that it should "just work." Then mark the public
+		//	// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
+		//	// is already 'const', so that should "just work" too.) The only
+		//	// thing we're waiting for is Mutex::new to be const.
+		//	std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
+		//	stacks.reserve(MAX_POOL_STACKS);
 
-	//static auto new1(F create) -> Pool<T, F>
-	//{
-	//	// MSRV(1.63): Mark this function as 'const'. I've arranged the
-	//	// code such that it should "just work." Then mark the public
-	//	// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
-	//	// is already 'const', so that should "just work" too.) The only
-	//	// thing we're waiting for is Mutex::new to be const.
-	//	std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
-	//	stacks.reserve(MAX_POOL_STACKS);
+		//	for (size_t i = 0; i < stacks.capacity(); i++)
+		//	{
+		//		stacks.push_back(CacheLine(Mutex(std::vector<std::unique_ptr<T>>())));
+		//	}
 
-	//	for (size_t i = 0; i < stacks.capacity(); i++)
-	//	{
-	//		stacks.push_back(CacheLine(Mutex(std::vector<std::unique_ptr<T>>())));
-	//	}
+		//	auto owner = std::atomic<size_t>(THREAD_ID_UNOWNED);
+		//	auto owner_val = std::nullopt;// UnsafeCell::new(None); // init'd on first access
+		//	return Pool{ create, stacks, THREAD_ID_UNOWNED, /*owner,*/ owner_val };
+		//}
 
-	//	auto owner = std::atomic<size_t>(THREAD_ID_UNOWNED);
-	//	auto owner_val = std::nullopt;// UnsafeCell::new(None); // init'd on first access
-	//	return Pool{ create, stacks, THREAD_ID_UNOWNED, /*owner,*/ owner_val };
-	//}
-
-	auto get(this Pool& self) -> PoolGuard
-	{
-		// Our fast path checks if the caller is the thread that "owns"
-		// this pool. Or stated differently, whether it is the first thread
-		// that tried to extract a value from the pool. If it is, then we
-		// can return a T to the caller without going through a mutex.
-		//
-		// SAFETY: We must guarantee that only one thread gets access
-		// to this value. Since a thread is uniquely identified by the
-		// THREAD_ID thread local, it follows that if the caller's thread
-		// ID is equal to the owner, then only one thread may receive this
-		// value. This is also why we can get away with what looks like a
-		// racy load and a store. We know that if 'owner == caller', then
-		// only one thread can be here, so we don't need to worry about any
-		// other thread setting the owner to something else.
-		auto caller = THREAD_ID;// .with(| id | *id);
-		auto owner = self.owner.load(std::memory_order::acquire);
-		if (caller == owner) {
-			// N.B. We could also do a CAS here instead of a load/store,
-			// but ad hoc benchmarking suggests it is slower. And a lot
-			// slower in the case where `get_slow` is common.
-			self.owner.store(THREAD_ID_INUSE, std::memory_order::release);
-			return self.guard_owned(caller);
-		}
-		return self.get_slow(caller, owner);
-	}
-
-	auto get_slow(
-		this Pool& self,
-		size_t caller,
-		size_t owner
-	) -> PoolGuard {
-		if (owner == THREAD_ID_UNOWNED) {
-			// This sentinel means this pool is not yet owned. We try to
-			// atomically set the owner. If we do, then this thread becomes
-			// the owner and we can return a guard that represents the
-			// special T for the owner.
+		auto get(this Pool& self) -> PoolGuard
+		{
+			// Our fast path checks if the caller is the thread that "owns"
+			// this pool. Or stated differently, whether it is the first thread
+			// that tried to extract a value from the pool. If it is, then we
+			// can return a T to the caller without going through a mutex.
 			//
-			// Note that we set the owner to a different sentinel that
-			// indicates that the owned value is in use. The owner ID will
-			// get updated to the actual ID of this thread once the guard
-			// returned by this function is put back into the pool.
-			auto res = self.owner.compare_exchange_strong(
-				THREAD_ID_UNOWNED,
-				THREAD_ID_INUSE,
-				std::memory_order::acq_rel,
-				std::memory_order::acquire
-			);
-			if (res) {
-				// SAFETY: A successful CAS above implies this thread is
-				// the owner and that this is the only such thread that
-				// can reach here. Thus, there is no data race.
-
-				self.owner_val = std::move(std::unique_ptr<T>(self.create()));// std::invoke(self.create); self.create();
+			// SAFETY: We must guarantee that only one thread gets access
+			// to this value. Since a thread is uniquely identified by the
+			// THREAD_ID thread local, it follows that if the caller's thread
+			// ID is equal to the owner, then only one thread may receive this
+			// value. This is also why we can get away with what looks like a
+			// racy load and a store. We know that if 'owner == caller', then
+			// only one thread can be here, so we don't need to worry about any
+			// other thread setting the owner to something else.
+			auto caller = THREAD_ID;// .with(| id | *id);
+			auto owner = self.owner.load(std::memory_order::acquire);
+			if (caller == owner) {
+				// N.B. We could also do a CAS here instead of a load/store,
+				// but ad hoc benchmarking suggests it is slower. And a lot
+				// slower in the case where `get_slow` is common.
+				self.owner.store(THREAD_ID_INUSE, std::memory_order::release);
 				return self.guard_owned(caller);
 			}
+			return self.get_slow(caller, owner);
 		}
-		auto stack_id = caller % self.stacks.size();
-		// We try to acquire exclusive access to this thread's stack, and
-		// if so, grab a value from it if we can. We put this in a loop so
-		// that it's easy to tweak and experiment with a different number
-		// of tries. In the end, I couldn't see anything obviously better
-		// than one attempt in ad hoc testing.
 
-		for (int i = 0; i < 10; i++)
-		{
-			auto& stack = self.stacks[stack_id].value;
-			/*	{
-					Err(_) = > continue,
-						Ok(stack) = > stack,
-				};*/
-			if (stack.try_lock()) {
-				if (auto v = stack.Ref(); !v->empty()) {
-					std::unique_ptr s(std::move(v->back()));
-					v->pop_back();
-					stack.unlock();
-					return self.guard_stack(std::move(s));
+		auto get_slow(
+			this Pool& self,
+			size_t caller,
+			size_t owner
+		) -> PoolGuard {
+			if (owner == THREAD_ID_UNOWNED) {
+				// This sentinel means this pool is not yet owned. We try to
+				// atomically set the owner. If we do, then this thread becomes
+				// the owner and we can return a guard that represents the
+				// special T for the owner.
+				//
+				// Note that we set the owner to a different sentinel that
+				// indicates that the owned value is in use. The owner ID will
+				// get updated to the actual ID of this thread once the guard
+				// returned by this function is put back into the pool.
+				auto res = self.owner.compare_exchange_strong(
+					THREAD_ID_UNOWNED,
+					THREAD_ID_INUSE,
+					std::memory_order::acq_rel,
+					std::memory_order::acquire
+				);
+				if (res) {
+					// SAFETY: A successful CAS above implies this thread is
+					// the owner and that this is the only such thread that
+					// can reach here. Thus, there is no data race.
+
+					self.owner_val = std::move(std::unique_ptr<T>(self.create()));// std::invoke(self.create); self.create();
+					return self.guard_owned(caller);
 				}
 			}
+			auto stack_id = caller % self.stacks.size();
+			// We try to acquire exclusive access to this thread's stack, and
+			// if so, grab a value from it if we can. We put this in a loop so
+			// that it's easy to tweak and experiment with a different number
+			// of tries. In the end, I couldn't see anything obviously better
+			// than one attempt in ad hoc testing.
 
-			// Unlock the mutex guarding the stack before creating a fresh
-			// value since we no longer need the stack.
-			stack.unlock();
-			auto value = std::unique_ptr<T>
-				(
-					self.create()
-					//(self.create)()
-				);
-			return self.guard_stack(std::move(value));
-		}
-		// We're only here if we could get access to our stack, so just
-		// create a new value. This seems like it could be wasteful, but
-		// waiting for exclusive access to a stack when there's high
-		// contention is brutal for perf.
-		return self.guard_stack_transient(std::unique_ptr<T>(
-			self.create()
-			//(self.create)()
-		));
-	}
-
-	/// Puts a value back into the pool. Callers don't need to call this.
-	/// Once the guard that's returned by 'get' is dropped, it is put back
-	/// into the pool automatically.
-
-	void put_value(this Pool& self, std::unique_ptr<T> value) {
-		auto caller = THREAD_ID;// .with(| id | *id);
-		auto stack_id = caller % self.stacks.size();
-		// As with trying to pop a value from this thread's stack, we
-		// merely attempt to get access to push this value back on the
-		// stack. If there's too much contention, we just give up and throw
-		// the value away.
-		//
-		// Interestingly, in ad hoc benchmarking, it is beneficial to
-		// attempt to push the value back more than once, unlike when
-		// popping the value. I don't have a good theory for why this is.
-		// I guess if we drop too many values then that winds up forcing
-		// the pop operation to create new fresh values and thus leads to
-		// less reuse. There's definitely a balancing act here.
-		for (int i = 0; i < 10; i++)
-		{
-			auto& s = self.stacks[stack_id];
-			auto& stack = s.value;
-			if (stack.try_lock())
+			for (int i = 0; i < 10; i++)
 			{
-				stack.Ref()->push_back(std::move(value));
+				auto& stack = self.stacks[stack_id].value;
+				/*	{
+						Err(_) = > continue,
+							Ok(stack) = > stack,
+					};*/
+				if (stack.try_lock()) {
+					if (auto v = stack.Ref(); !v->empty()) {
+						std::unique_ptr s(std::move(v->back()));
+						v->pop_back();
+						stack.unlock();
+						return self.guard_stack(std::move(s));
+					}
+				}
+
+				// Unlock the mutex guarding the stack before creating a fresh
+				// value since we no longer need the stack.
 				stack.unlock();
-				return;
+				auto value = std::unique_ptr<T>
+					(
+						self.create()
+						//(self.create)()
+					);
+				return self.guard_stack(std::move(value));
+			}
+			// We're only here if we could get access to our stack, so just
+			// create a new value. This seems like it could be wasteful, but
+			// waiting for exclusive access to a stack when there's high
+			// contention is brutal for perf.
+			return self.guard_stack_transient(std::unique_ptr<T>(
+				self.create()
+				//(self.create)()
+			));
+		}
+
+		/// Puts a value back into the pool. Callers don't need to call this.
+		/// Once the guard that's returned by 'get' is dropped, it is put back
+		/// into the pool automatically.
+
+		void put_value(this Pool& self, std::unique_ptr<T> value) {
+			auto caller = THREAD_ID;// .with(| id | *id);
+			auto stack_id = caller % self.stacks.size();
+			// As with trying to pop a value from this thread's stack, we
+			// merely attempt to get access to push this value back on the
+			// stack. If there's too much contention, we just give up and throw
+			// the value away.
+			//
+			// Interestingly, in ad hoc benchmarking, it is beneficial to
+			// attempt to push the value back more than once, unlike when
+			// popping the value. I don't have a good theory for why this is.
+			// I guess if we drop too many values then that winds up forcing
+			// the pop operation to create new fresh values and thus leads to
+			// less reuse. There's definitely a balancing act here.
+			for (int i = 0; i < 10; i++)
+			{
+				auto& s = self.stacks[stack_id];
+				auto& stack = s.value;
+				if (stack.try_lock())
+				{
+					stack.Ref()->push_back(std::move(value));
+					stack.unlock();
+					return;
+				}
 			}
 		}
-	}
 
-	/// Create a guard that represents the special owned T.
+		/// Create a guard that represents the special owned T.
 
-	auto guard_owned(this Pool& self, size_t caller) -> PoolGuard
-	{
-		return PoolGuard{ .pool = self, .v = std::unexpected(caller), .discard = false };
-	}
+		auto guard_owned(this Pool& self, size_t caller) -> PoolGuard
+		{
+			return PoolGuard{ .pool = self, .v = std::unexpected(caller), .discard = false };
+		}
 
-	/// Create a guard that contains a value from the pool's stack.
+		/// Create a guard that contains a value from the pool's stack.
 
-	auto guard_stack(this Pool& self, std::unique_ptr<T> value) -> PoolGuard
-	{
-		return PoolGuard{ .pool = self, .v = std::move(value), .discard = false };
-	}
+		auto guard_stack(this Pool& self, std::unique_ptr<T> value) -> PoolGuard
+		{
+			return PoolGuard{ .pool = self, .v = std::move(value), .discard = false };
+		}
 
-	/// Create a guard that contains a value from the pool's stack with an
-	/// instruction to throw away the value instead of putting it back
-	/// into the pool.
+		/// Create a guard that contains a value from the pool's stack with an
+		/// instruction to throw away the value instead of putting it back
+		/// into the pool.
 
-	auto guard_stack_transient(this Pool& self, std::unique_ptr<T> value) -> PoolGuard
-	{
-		return PoolGuard{ .pool = self, .v = std::move(value), .discard = true };
-	}
-};
+		auto guard_stack_transient(this Pool& self, std::unique_ptr<T> value) -> PoolGuard
+		{
+			return PoolGuard{ .pool = self, .v = std::move(value), .discard = true };
+		}
+	};
 }
 
 template <class T, class F>
@@ -652,9 +633,7 @@ struct Pool
 		pool = std::move(other.pool);
 	}
 
-	Pool(std::unique_ptr<inner::Pool<T, F>> pool) : pool(std::move(pool))
-	{
-	}
+	Pool(std::unique_ptr<inner::Pool<T, F>> pool) : pool(std::move(pool)) {}
 
 	struct PoolGuard
 	{
@@ -665,11 +644,11 @@ struct Pool
 			inner::Pool<T, F>::PoolGuard::put(value.value);
 		}
 
-		auto operator*() -> T& {
+		auto operator*() const -> T& {
 			return value.value_mut();
 		}
 
-		auto operator->() -> T* {
+		auto operator->() const -> T* {
 			return &value.value_mut();
 		}
 

@@ -15,7 +15,7 @@ namespace pcre2 {
 
 	/// The type of the closure we use to create new caches. We need to spell out
 	/// all of the marker traits or else we risk leaking !MARKER impls.
-	using MatchDataPoolFn = std::function<MatchData*()>;
+	using MatchDataPoolFn = std::function<MatchData* ()>;
 	//using MatchDataPoolFn = decltype([]() ->std::unique_ptr<MatchData> {});
 
 	using MatchDataPool = Pool<MatchData, MatchDataPoolFn>;
@@ -180,8 +180,7 @@ namespace pcre2 {
 
 		auto find_at_with_match_data(
 			this const wregex& self,
-			MatchDataPoolGuard& match_data,
-			//match_data: &mut MatchDataPoolGuard < '_>,
+			const MatchDataPoolGuard& match_data,
 			std::wstring_view subject,
 			size_t start
 		) -> std::expected<std::optional<Match>, Error> {
@@ -285,13 +284,15 @@ namespace pcre2 {
 
 			auto capture_names = code->capture_names();
 			auto idx = std::make_unique<std::map<std::wstring, size_t, std::less<void>>>();
-			for (size_t i = 0; i < capture_names.size(); i++) {
-				if (auto name = capture_names[i]; !name.empty()) {
+			for (size_t i = 0; i < capture_names.size(); i++)
+			{
+				if (auto name = capture_names[i]; !name.empty())
+				{
 					idx->emplace(name, i);
 				}
 			}
 
-			auto match_data = MatchDataPool::create([v=code.get(), c = config.match_config]()
+			auto match_data = MatchDataPool::create([v = code.get(), c = config.match_config]()
 				{
 					return new MatchData(c, v);
 				});
@@ -343,14 +344,13 @@ namespace pcre2 {
 			// SAFETY: We don't use any dangerous PCRE2 options.
 			auto res =
 				match_data->find(self.code.get(), subject, start, options);
-			// PoolGuard::put(match_data);
+			MatchDataPoolGuard::put(match_data);
 			return res;
 		}
 
 		struct Matches {
 			const wregex& re;
 			MatchDataPoolGuard match_data;
-			//MatchData match_data : MatchDataPoolGuard < 'r>,
 			std::wstring_view subject;
 			size_t last_end;
 			std::optional<size_t> last_match;
