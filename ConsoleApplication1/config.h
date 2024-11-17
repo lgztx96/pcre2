@@ -39,7 +39,7 @@ struct Config {
 	/// Match-time specific configuration knobs.
 	MatchConfig match_config;
 
-	Config()
+	Config() noexcept
 		: caseless(false)
 		, dotall(false)
 		, extended(false)

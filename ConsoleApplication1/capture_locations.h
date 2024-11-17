@@ -11,7 +11,7 @@ struct CaptureLocations
 	Code* code;
 	std::unique_ptr<MatchData> data;
 
-	CaptureLocations(Code* code, std::unique_ptr<MatchData> data) : code(code), data(std::move(data)) {}
+	CaptureLocations(Code* code, std::unique_ptr<MatchData> data) noexcept : code(code), data(std::move(data)) {}
 
 	CaptureLocations(const CaptureLocations& r) = delete;
 
