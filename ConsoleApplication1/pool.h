@@ -372,22 +372,22 @@ namespace inner
 
 			inline void put_imp(this PoolGuard& self)
 			{
-				//if (auto& v = self.v)
-				//{
-				//	if (self.discard)
-				//	{
-				//		return;
-				//	}
-				//	self.pool.put_value(std::move(*v));
-				//	self.v = std::unexpected(THREAD_ID_DROPPED);
-				//}
-				//else {
-				//	auto owner = self.v.error();
-				//	assert(THREAD_ID_DROPPED != owner);
-				//	self.pool.owner.store(owner, std::memory_order::release);
-				//}
+				if (auto& v = self.v)
+				{
+					if (self.discard)
+					{
+						return;
+					}
+					self.pool.put_value(std::move(*v));
+					self.v = std::unexpected(THREAD_ID_DROPPED);
+				}
+				else {
+					auto owner = self.v.error();
+					assert(THREAD_ID_DROPPED != owner);
+					self.pool.owner.store(owner, std::memory_order::release);
+				}
 
-				if (auto value = std::exchange(self.v, std::unexpected(THREAD_ID_DROPPED))) {
+				/*if (auto value = std::exchange(self.v, std::unexpected(THREAD_ID_DROPPED))) {
 					if (self.discard)
 					{
 						return;
@@ -398,7 +398,7 @@ namespace inner
 					auto owner = value.error();
 					assert(THREAD_ID_DROPPED != owner);
 					self.pool.owner.store(owner, std::memory_order::release);
-				}
+				}*/
 
 				//match core::mem::replace(&self.v, Err(THREAD_ID_DROPPED)) {
 				//	Ok(value) = > {
@@ -597,7 +597,7 @@ namespace inner
 				auto& stack = s.value;
 				if (stack.try_lock())
 				{
-					stack.Ref()->push_back(std::move(value));
+					stack.Ref()->emplace_back(std::move(value));
 					stack.unlock();
 					return;
 				}

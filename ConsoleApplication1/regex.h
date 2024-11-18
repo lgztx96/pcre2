@@ -95,27 +95,27 @@ namespace pcre2 {
 		auto is_meta_character = [](char c) -> bool {
 			switch (c)
 			{
-				case '\\':
-				case '.':
-				case '+':
-				case '*':
-				case '?':
-				case '(':
-				case ')':
-				case '|':
-				case '[':
-				case ']':
-				case '{':
-				case '}':
-				case '^':
-				case '$':
-				case '#':
-				case '-':
-					return true;
+			case '\\':
+			case '.':
+			case '+':
+			case '*':
+			case '?':
+			case '(':
+			case ')':
+			case '|':
+			case '[':
+			case ']':
+			case '{':
+			case '}':
+			case '^':
+			case '$':
+			case '#':
+			case '-':
+				return true;
 			default:
 				return false;
 			}
-		};
+			};
 
 		// Is it really true that PCRE2 doesn't have an API routine to
 		// escape a pattern so that it matches literally? Wow. I couldn't
@@ -230,18 +230,18 @@ namespace pcre2 {
 			uint32_t options = 0;
 			// SAFETY: We don't use any dangerous PCRE2 options.
 			return locs.data->find(
-				self.code.get(), 
-				subject, 
-				start, 
+				self.code.get(),
+				subject,
+				start,
 				options)
-			.transform([&](bool b) -> std::optional<Match>
-				{
-					if (b) {
-						auto ovector = locs.data->ovector();
-						return std::make_optional<Match>(subject.data(), ovector[0], ovector[1]);
-					}
-					return {};
-				});
+				.transform([&](bool b) -> std::optional<Match>
+					{
+						if (b) {
+							auto ovector = locs.data->ovector();
+							return std::make_optional<Match>(subject.data(), ovector[0], ovector[1]);
+						}
+						return {};
+					});
 		}
 
 		static inline auto jit_compile(std::wstring_view pattern) -> std::expected<wregex, Error>
@@ -495,8 +495,8 @@ namespace pcre2 {
 			}
 		};
 
-		struct CaptureMatches {
-
+		struct CaptureMatches
+		{
 			const wregex& re;
 			std::wstring_view subject;
 			size_t last_end;
@@ -507,9 +507,9 @@ namespace pcre2 {
 				using difference_type = std::ptrdiff_t;
 				using element_type = std::expected<Captures, Error>;
 				using pointer = element_type*;
-				using reference = const element_type&;
+				using reference = element_type&;
 
-				reference& operator*(this const iterator& self)
+				const element_type& operator*(this const iterator& self)
 				{
 					if (!self.current)
 					{
@@ -518,26 +518,24 @@ namespace pcre2 {
 					return self.current.value();
 				}
 
-				iterator& operator++()
+				iterator& operator++(this iterator& self)
 				{
-					if (!current)
+					if (!self.current)
 					{
 						throw "at the end";
 					}
 
-					if (auto v = matches->next()) {
-						current = std::move(v);
+					if (auto v = self.matches->next()) {
+						self.current = std::move(v);
 					}
 					else {
-						current = std::nullopt;
+						self.current = std::nullopt;
 					}
 
-					++index;
+					++self.index;
 
-					return *this;
+					return self;
 				}
-
-				void operator++(int) { ++*this; }
 
 				bool operator==(const iterator& iter)
 				{
@@ -614,36 +612,6 @@ namespace pcre2 {
 			}
 		};
 
-		//// 查找第一个匹配项
-		//std::optional<Match> find_at(std::wstring_view subject, size_t offset) const {
-		//    PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
-
-		//    auto match_data = match_data_ptr(pcre2_match_data_create_from_pattern_16(code->as_ptr(), nullptr), &pcre2_match_data_free_16);
-
-		//    int result = pcre2_jit_match_16(
-		//        code->as_ptr(),
-		//        subject_ptr,      
-		//        subject.size(),
-		//        offset,  
-		//        0,            
-		//        match_data.get(), 
-		//        nullptr);
-
-		//    if (result >= 0) {
-		//        uint32_t size = pcre2_get_ovector_count_16(match_data.get());
-		//        size_t* ovector = pcre2_get_ovector_pointer_16(match_data.get());
-		//       // for (uint32_t i = 0; i < size; i++)
-		//        {
-		//            // result->data.write[i].start = ovector[i * 2];
-		//            // result->data.write[i].end = ovector[i * 2 + 1];
-		//        }
-		//        
-		//        return Match{ .start = ovector[0], .end = ovector[1] };
-		//    }
-
-		//    return std::nullopt;
-		//}
-
 		auto find_at(this const wregex& self,
 			std::wstring_view subject,
 			size_t start
@@ -676,7 +644,8 @@ namespace pcre2 {
 			return self.find_at(subject, 0);
 		}
 
-		inline auto find_iter(this const wregex& self, std::wstring_view subject) -> Matches {
+		inline auto find_iter(this const wregex& self, std::wstring_view subject) -> Matches
+		{
 			return Matches{
 				 .re = self,
 				 .match_data = self.match_data.get(),
@@ -749,5 +718,224 @@ namespace pcre2 {
 		//    pcre2_match_data_free_16(match_data);
 		//    return true;
 		//}
+
+		struct Split {
+			Matches finder;
+			size_t last;
+
+			struct iterator
+			{
+				using difference_type = std::ptrdiff_t;
+				using element_type = std::expected<std::wstring_view, Error>;
+				using pointer = element_type*;
+				using reference = element_type&;
+
+				const element_type& operator*(this const iterator& self)
+				{
+					if (!self.current)
+					{
+						throw "at the end";
+					}
+					return self.current.value();
+				}
+
+				iterator& operator++(this iterator& self)
+				{
+					if (!self.current)
+					{
+						throw "at the end";
+					}
+
+					if (auto v = self.split->next()) {
+						self.current = std::move(v);
+					}
+					else {
+						self.current = std::nullopt;
+					}
+
+					++self.index;
+
+					return self;
+				}
+
+				bool operator==(const iterator& iter)
+				{
+					if (!iter.current && !current) return true;
+					return iter.split == split && iter.index == index;
+				}
+
+				bool operator!=(const iterator& iter)
+				{
+					if (!iter.current && !current) {
+						return false;
+					}
+					return iter.split != split || iter.index != index;
+				}
+
+				iterator(Split* split,
+					std::optional<std::expected<std::wstring_view, Error>> start)
+					noexcept : split(split), current(start), index(0)
+				{
+
+				}
+
+				iterator(Split* split) noexcept : split(split), index(-1) {}
+
+				~iterator() = default;
+
+			private:
+				Split* split;
+				std::optional<std::expected<std::wstring_view, Error>> current;
+				int index;
+			};
+
+			auto begin() { return iterator(this, next()); };
+
+			auto end() { return iterator(this); };
+
+			auto next(this Split& self) -> std::optional<std::expected<std::wstring_view, Error>> {
+				auto text = self.finder.subject;
+				auto v = self.finder.next();
+				if (!v)
+				{
+					if (self.last > text.size()) {
+						return std::nullopt;
+					}
+					else {
+						auto s = text.substr(self.last);
+						self.last = text.size() + 1; // Next call will return None
+						return std::make_optional(s);
+					}
+				}
+				else {
+					if (*v) {
+						auto matched = text.substr(self.last, (*v)->start - self.last);
+						self.last = (*v)->end;
+						return std::make_optional(matched);
+					}
+					else {
+						return std::unexpected(v->error());
+					}
+				}
+			}
+		};
+
+		inline auto split(this const wregex& self, std::wstring_view haystack) -> Split
+		{
+			return Split{ .finder = self.find_iter(haystack), .last = 0 };
+		}
+
+		struct SplitN {
+			Split splits;
+			size_t limit;
+
+			struct iterator
+			{
+				using difference_type = std::ptrdiff_t;
+				using element_type = std::expected<std::wstring_view, Error>;
+				using pointer = element_type*;
+				using reference = element_type&;
+
+				const element_type& operator*(this const iterator& self)
+				{
+					if (!self.current)
+					{
+						throw "at the end";
+					}
+					return self.current.value();
+				}
+
+				iterator& operator++(this iterator& self)
+				{
+					if (!self.current)
+					{
+						throw "at the end";
+					}
+
+					if (auto v = self.split->next()) {
+						self.current = std::move(v);
+					}
+					else {
+						self.current = std::nullopt;
+					}
+
+					++self.index;
+
+					return self;
+				}
+
+				bool operator==(const iterator& iter)
+				{
+					if (!iter.current && !current) return true;
+					return iter.split == split && iter.index == index;
+				}
+
+				bool operator!=(const iterator& iter)
+				{
+					if (!iter.current && !current) {
+						return false;
+					}
+					return iter.split != split || iter.index != index;
+				}
+
+				iterator(SplitN* split,
+					std::optional<std::expected<std::wstring_view, Error>> start)
+					noexcept : split(split), current(start), index(0)
+				{
+
+				}
+
+				iterator(SplitN* split) noexcept : split(split), index(-1) {}
+
+				~iterator() = default;
+
+			private:
+				SplitN* split;
+				std::optional<std::expected<std::wstring_view, Error>> current;
+				int index;
+			};
+
+			auto begin() { return iterator(this, next()); };
+
+			auto end() { return iterator(this); };
+
+			auto next(this SplitN& self) -> std::optional<std::expected<std::wstring_view, Error>>
+			{
+				if (self.limit == 0) {
+					return std::nullopt;
+				}
+
+				self.limit -= 1;
+				if (self.limit > 0) {
+					return self.splits.next();
+				}
+
+				auto len = self.splits.finder.subject.size();
+				if (self.splits.last > len) {
+					// We've already returned all substrings.
+					return std::nullopt;
+				}
+				else {
+					auto text = self.splits.finder.subject;
+					auto matched = text.substr(self.splits.last);
+					return std::make_optional(matched);
+				}
+			}
+
+			auto size_hint(this const SplitN& self) -> std::tuple<size_t, std::optional<size_t>> 
+			{
+				return std::make_tuple(0, std::optional(self.limit));
+			}
+		};
+
+		inline auto splitn(
+					this const wregex& self,
+					std::wstring_view haystack,
+					size_t limit
+					) -> SplitN
+		{
+			return SplitN{ Split{.finder = self.find_iter(haystack), .last = 0 }, limit };
+				
+		}
 	};
 }

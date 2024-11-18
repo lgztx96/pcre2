@@ -39,6 +39,13 @@ int main()
 		c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 		std::println("boost {}ms", c);
+		for (const auto& v : regex->split(text)) {
+			if (v) 
+			{ 
+				std::wstring s(v->data(), v->size());
+				std::wcout << s << std::endl;
+			}
+		}
 		return 0;
 		boost::wsmatch match;
 
