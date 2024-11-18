@@ -95,27 +95,27 @@ namespace pcre2 {
 		auto is_meta_character = [](char c) -> bool {
 			switch (c)
 			{
-			case '\\':
-			case '.':
-			case '+':
-			case '*':
-			case '?':
-			case '(':
-			case ')':
-			case '|':
-			case '[':
-			case ']':
-			case '{':
-			case '}':
-			case '^':
-			case '$':
-			case '#':
-			case '-':
-				return true;
+				case '\\':
+				case '.':
+				case '+':
+				case '*':
+				case '?':
+				case '(':
+				case ')':
+				case '|':
+				case '[':
+				case ']':
+				case '{':
+				case '}':
+				case '^':
+				case '$':
+				case '#':
+				case '-':
+					return true;
 			default:
 				return false;
 			}
-			};
+		};
 
 		// Is it really true that PCRE2 doesn't have an API routine to
 		// escape a pattern so that it matches literally? Wow. I couldn't
@@ -156,7 +156,7 @@ namespace pcre2 {
 			std::unique_ptr<std::vector<std::wstring>> capture_names,
 			std::unique_ptr<std::map<std::wstring, size_t, std::less<void>>> capture_names_idx,
 			MatchDataPool data
-		)
+		) noexcept
 			: config(config)
 			, pattern(pattern)
 			, code(std::move(code))

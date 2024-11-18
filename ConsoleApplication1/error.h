@@ -25,32 +25,38 @@ struct Error
 	std::optional<size_t> offset;
 
 	/// Create a new compilation error.
-	static auto compile(int code, size_t offset) -> Error {
+	static auto compile(int code, size_t offset) -> Error
+	{
 		return Error{ ErrorKind::Compile, code, offset };
 	}
 
 	/// Create a new JIT compilation error.
-	static auto jit(int code) -> Error {
+	static auto jit(int code) -> Error
+	{
 		return Error{ ErrorKind::JIT, code, std::nullopt };
 	}
 
 	/// Create a new matching error.
-	static auto matching(int code) -> Error {
+	static auto matching(int code) -> Error 
+	{
 		return Error{ ErrorKind::Match, code, std::nullopt };
 	}
 
 	/// Create a new info error.
-	static auto info(int code) -> Error {
+	static auto info(int code) -> Error
+	{
 		return Error{ ErrorKind::Info, code, std::nullopt };
 	}
 
 	/// Create a new option error.
-	static auto option(int code) -> Error {
+	static auto option(int code) -> Error
+	{
 		return Error{ ErrorKind::Option, code, std::nullopt };
 	}
 
 	/// Returns the error message from PCRE2.
-	auto error_message(this const Error& self) -> std::wstring {
+	auto error_message(this const Error& self) -> std::wstring
+	{
 		// PCRE2 docs say a buffer size of 120 bytes is enough, but we're
 		// cautious and double it.
 		std::array<uint16_t, 240> buf{};

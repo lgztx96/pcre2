@@ -15,11 +15,11 @@ struct Captures
 		const wchar_t* subject, 
 		CaptureLocations locs, 
 		const std::map<std::wstring, size_t, std::less<void>>* idx) noexcept
-		: subject(subject), locs(std::move(locs)), idx(idx) {};
+		: subject(subject), locs(std::move(locs)), idx(idx) {}
 
-	Captures(const Captures& c) = delete;
-	Captures(Captures&& c) noexcept : subject(c.subject), locs(std::move(c.locs)), idx(c.idx) {};
-	Captures operator=(Captures&& c) noexcept { return Captures(std::move(c)); };
+	Captures(const Captures& rhs) = delete;
+	Captures(Captures&& rhs) noexcept : subject(rhs.subject), locs(std::move(rhs.locs)), idx(rhs.idx) {}
+	Captures operator=(Captures&& rhs) noexcept { return Captures(std::move(rhs)); }
 
 	auto get(this const Captures& self, size_t i) -> std::optional<Match>
 	{

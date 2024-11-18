@@ -13,14 +13,14 @@ struct CaptureLocations
 
 	CaptureLocations(Code* code, std::unique_ptr<MatchData> data) noexcept : code(code), data(std::move(data)) {}
 
-	CaptureLocations(const CaptureLocations& r) = delete;
+	CaptureLocations(const CaptureLocations& rhs) = delete;
 
-	CaptureLocations(CaptureLocations&& r) noexcept : code(r.code), data(std::move(r.data)) {};
+	CaptureLocations(CaptureLocations&& rhs) noexcept : code(rhs.code), data(std::move(rhs.data)) {}
 
-	CaptureLocations operator=(CaptureLocations&& r) noexcept
+	CaptureLocations operator=(CaptureLocations&& rhs) noexcept
 	{
-		return CaptureLocations(std::move(r));
-	};
+		return CaptureLocations(std::move(rhs));
+	}
 
 	auto get(this const CaptureLocations& self, size_t i) noexcept -> std::optional<std::tuple<size_t, size_t>>
 	{

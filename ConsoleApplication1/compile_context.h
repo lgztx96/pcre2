@@ -18,7 +18,10 @@ struct CompileContext
 		context = ctx;
 	}
 
-	~CompileContext() {
+	CompileContext(const CompileContext& rhs) = delete;
+
+	~CompileContext()
+	{
 		pcre2_compile_context_free_16(context);
 	}
 

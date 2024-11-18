@@ -146,7 +146,7 @@ namespace inner
 	///
 	/// See this issue for more context and discussion:
 	/// https://github.com/rust-lang/regex/issues/934
-	const constexpr size_t MAX_POOL_STACKS = 8;
+	static const constexpr size_t MAX_POOL_STACKS = 8;
 
 	//thread_local!(
 		/// A thread local used to assign an ID to a thread.
@@ -178,7 +178,6 @@ namespace inner
 		/// problem by causing "false sharing." By putting each mutex in its own
 		/// cache-line, we avoid the false sharing problem and the affects of
 		/// contention are greatly reduced.
-
 
 	template<typename T>
 	struct __declspec(align(64)) CacheLine
@@ -373,17 +372,31 @@ namespace inner
 
 			inline void put_imp(this PoolGuard& self)
 			{
-				if (auto& v = self.v)
-				{
+				//if (auto& v = self.v)
+				//{
+				//	if (self.discard)
+				//	{
+				//		return;
+				//	}
+				//	self.pool.put_value(std::move(*v));
+				//	self.v = std::unexpected(THREAD_ID_DROPPED);
+				//}
+				//else {
+				//	auto owner = self.v.error();
+				//	assert(THREAD_ID_DROPPED != owner);
+				//	self.pool.owner.store(owner, std::memory_order::release);
+				//}
+
+				if (auto value = std::exchange(self.v, std::unexpected(THREAD_ID_DROPPED))) {
 					if (self.discard)
 					{
 						return;
 					}
-					self.pool.put_value(std::move(*v));
-					self.v = std::unexpected(THREAD_ID_DROPPED);
+					self.pool.put_value(std::move(*value));
 				}
 				else {
-					auto owner = self.v.error();
+					auto owner = value.error();
+					assert(THREAD_ID_DROPPED != owner);
 					self.pool.owner.store(owner, std::memory_order::release);
 				}
 
@@ -424,7 +437,7 @@ namespace inner
 			}
 		};
 
-		Pool(F create) : owner(THREAD_ID_UNOWNED)
+		Pool(F create) : owner(THREAD_ID_UNOWNED), create(create)
 		{
 			// MSRV(1.63): Mark this function as 'const'. I've arranged the
 			// code such that it should "just work." Then mark the public
@@ -438,8 +451,6 @@ namespace inner
 			{
 				stacks.emplace_back(Mutex<std::vector<std::unique_ptr<T>>>());
 			}
-
-			this->create = create;
 		}
 
 		//static auto new1(F create) -> Pool<T, F>
@@ -641,12 +652,12 @@ struct Pool
 			inner::Pool<T, F>::PoolGuard::put(value.value);
 		}
 
-		auto operator*() const -> T& {
-			return value.value_mut();
+		auto operator*(this const PoolGuard& self) -> T& {
+			return self.value.value_mut();
 		}
 
-		auto operator->() const -> T* {
-			return &value.value_mut();
+		auto operator->(this const PoolGuard& self) -> T* {
+			return &self.value.value_mut();
 		}
 
 		auto deref(this const PoolGuard& self) -> const T& {
