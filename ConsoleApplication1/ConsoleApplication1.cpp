@@ -13,7 +13,7 @@ int main()
 	try 
 	{
 		const auto regex = pcre2::wregex::jit_compile(L"(\\d+)-(\\d+)-(\\d+)");
-		constexpr auto text = L"2024-05-23 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27 2025-06-27";
+		constexpr auto text = L"2024-05-23-2025-06-27--2025-06-27---2025-06-27----2025-06-27-----2025-06-27------2025-06-27-------2025-06-27";
 
 		boost::wregex re(L"(\\d+)-(\\d+)-(\\d+)");
 
@@ -39,7 +39,7 @@ int main()
 		c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 		std::println("boost {}ms", c);
-		for (const auto& v : regex->split(text)) {
+		for (const auto& v : regex->splitn(text, 5)) {
 			if (v) 
 			{ 
 				std::wstring s(v->data(), v->size());

@@ -132,7 +132,12 @@ struct MatchData
 	}
 
 	/// Return a mutable reference to the underlying match data.
-	inline auto as_mut_ptr(this const MatchData& self) -> pcre2_match_data_16*
+	inline auto as_mut_ptr(this const MatchData& self) noexcept -> pcre2_match_data_16*
+	{
+		return self.match_data;
+	}
+
+	explicit operator pcre2_match_data_16* (this const MatchData& self) noexcept
 	{
 		return self.match_data;
 	}
