@@ -44,7 +44,7 @@ struct CaptureLocations
 		return std::nullopt;
 	}
 
-	inline auto len(this const CaptureLocations& self) -> size_t
+	inline auto len(this const CaptureLocations& self) noexcept -> size_t
 	{
 		return self.data->ovector().size() / 2;
 	}

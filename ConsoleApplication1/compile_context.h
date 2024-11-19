@@ -30,7 +30,7 @@ struct CompileContext
 		return self.context;
 	}
 
-	inline auto as_mut_ptr(this const CompileContext& self) -> pcre2_compile_context_16*
+	inline auto as_mut_ptr(this const CompileContext& self) noexcept -> pcre2_compile_context_16*
 	{
 		return self.context;
 	}

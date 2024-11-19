@@ -46,6 +46,8 @@ int main()
 				std::wcout << s << std::endl;
 			}
 		}
+		std::wstring s;
+		regex->substitute(text, L"v${0}v", s);
 		return 0;
 		boost::wsmatch match;
 

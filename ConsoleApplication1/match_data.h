@@ -147,7 +147,7 @@ struct MatchData
 	/// The ovector represents match offsets as pairs. This always returns
 	/// N + 1 pairs (so 2*N + 1 offsets), where N is the number of capturing
 	/// groups in the original regex.
-	inline auto ovector(this const MatchData& self) -> std::span<const size_t>
+	inline auto ovector(this const MatchData& self) noexcept -> std::span<const size_t>
 	{
 		// SAFETY: Both our ovector pointer and count are derived directly from
 		// the creation of a valid match data block. One interesting question

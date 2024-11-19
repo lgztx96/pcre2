@@ -21,7 +21,7 @@ struct Captures
 	Captures(Captures&& rhs) noexcept : subject(rhs.subject), locs(std::move(rhs.locs)), idx(rhs.idx) {}
 	Captures operator=(Captures&& rhs) noexcept { return Captures(std::move(rhs)); }
 
-	auto get(this const Captures& self, size_t i) -> std::optional<Match>
+	auto get(this const Captures& self, size_t i) noexcept -> std::optional<Match>
 	{
 		return self.locs.get(i).transform([&](auto v) { auto& [s, e] = v; return Match(self.subject, s, e); });
 	}
@@ -48,7 +48,7 @@ struct Captures
 		//.unwrap_or_else(|| panic!("no group at index '{}'", i));
 	}
 
-	inline auto len(this const Captures& self) -> size_t
+	inline auto len(this const Captures& self) noexcept -> size_t
 	{
 		return self.locs.len();
 	}

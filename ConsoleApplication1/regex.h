@@ -115,7 +115,7 @@ namespace pcre2 {
 			default:
 				return false;
 			}
-		};
+			};
 
 		// Is it really true that PCRE2 doesn't have an API routine to
 		// escape a pattern so that it matches literally? Wow. I couldn't
@@ -677,71 +677,35 @@ namespace pcre2 {
 			return CaptureMatches{ .re = self, .subject = subject, .last_end = 0, .last_match = std::nullopt };
 		}
 
-
-		bool substitute(std::wstring_view subject, std::wstring_view replacement, std::wstring& output) const {
-		    PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
-		    PCRE2_SPTR16 replacement_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(replacement.data());
-
-		    output.resize(subject.size() + 1);
-		    size_t outlen = output.size();
-
-			pcre2_match_data_16* match_data = pcre2_match_data_create_from_pattern_16(code->as_ptr(), nullptr);
-		    int rc = pcre2_substitute_16(
-				code->as_ptr(),                      // 编译后的正则表达式
-		        subject_ptr,             // 要替换的文本
-		        subject.size(), // 文本长度
-		        0,                       // 匹配起始位置
-		        0,     
-		        match_data, // 标志
-		        nullptr,
-		        replacement_ptr,         // 替换字符串
-		        replacement.size(),  // 替换字符串长度
-		        reinterpret_cast<PCRE2_UCHAR16*>(output.data()),                 // 额外选项
-		        &outlen);                // 结果输出
-
-		    while (rc == PCRE2_ERROR_NOMEMORY) {
-		       output.resize(output.size() + subject.size());
-		       // o = (PCRE2_UCHAR16*)output.ptrw();
-		        rc = pcre2_substitute_16(code->as_ptr(),                      // 编译后的正则表达式
-		            subject_ptr,             // 要替换的文本
-		            subject.size(), // 文本长度
-		            0,                       // 匹配起始位置
-		            0,
-		            match_data, // 标志
-		            nullptr,
-		            replacement_ptr,         // 替换字符串
-		            replacement.size(),  // 替换字符串长度
-		            reinterpret_cast<PCRE2_UCHAR16*>(output.data()),                 // 额外选项
-		            &outlen);
-		    }
-		    output.resize(outlen);
-
-		    pcre2_match_data_free_16(match_data);
-		    return true;
-		}
-
-		bool substitute_all(std::wstring_view subject, std::wstring_view replacement, std::wstring& output) const {
+		bool substitute_with_options(
+			this const wregex& self,
+			std::wstring_view subject,
+			std::wstring_view replacement,
+			uint32_t options,
+			std::wstring& output) {
 			PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
 			PCRE2_SPTR16 replacement_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(replacement.data());
-
+			//pcre2_callout_enumerate_16
 			output.resize(subject.size() + 1);
 			size_t outlen = output.size();
 
-			uint32_t replaceOptions = PCRE2_SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_GLOBAL | PCRE2_SUBSTITUTE_EXTENDED | PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY;
+			auto match_data = self.new_match_data();
 
-			auto match_data = new_match_data();
+			auto c = match_data->find(self.code.get(), subject, 0, 0);
+			if (!c || !*c) return false;
+
 			int rc = pcre2_substitute_16(
-				code->as_ptr(),                     
-				subject_ptr,           
-				subject.size(), 
-				0,                      
-				replaceOptions | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH,
+				self.code->as_ptr(),
+				subject_ptr,
+				subject.size(),
+				0,
+				options | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH,
 				match_data->as_mut_ptr(),
 				nullptr,
-				replacement_ptr,     
+				replacement_ptr,
 				replacement.size(),
-				reinterpret_cast<PCRE2_UCHAR16*>(output.data()), 
-				&outlen);            
+				reinterpret_cast<PCRE2_UCHAR16*>(output.data()),
+				&outlen);
 
 			if (rc < 0 && rc != PCRE2_ERROR_NOMEMORY)
 			{
@@ -751,11 +715,11 @@ namespace pcre2 {
 			if (outlen > 1) {
 				output.resize(outlen);
 
-				rc = pcre2_substitute_16(code->as_ptr(),
+				rc = pcre2_substitute_16(self.code->as_ptr(),
 					subject_ptr,
 					subject.size(),
 					0,
-					replaceOptions,
+					options,
 					match_data->as_mut_ptr(),
 					nullptr,
 					replacement_ptr,
@@ -765,6 +729,35 @@ namespace pcre2 {
 			}
 
 			return true;
+		}
+
+		static constexpr uint32_t SUBSTITUTE_MATCHED =
+			PCRE2_SUBSTITUTE_MATCHED
+			| PCRE2_SUBSTITUTE_EXTENDED
+			| PCRE2_SUBSTITUTE_UNKNOWN_UNSET
+			| PCRE2_SUBSTITUTE_UNSET_EMPTY;
+
+		auto substitute(this const wregex& self,
+			std::wstring_view subject,
+			std::wstring_view replacement, 
+			std::wstring& output) -> bool {
+			return self.substitute_with_options(
+				subject, 
+				replacement, 
+				SUBSTITUTE_MATCHED, 
+				output);
+		}
+
+		auto substitute_all(this const wregex& self,
+			std::wstring_view subject,
+			std::wstring_view replacement,
+			std::wstring& output) -> bool {
+
+			return self.substitute_with_options(
+				subject,
+				replacement, 
+				SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_GLOBAL,
+				output);
 		}
 
 		struct Split {
@@ -806,13 +799,13 @@ namespace pcre2 {
 					return self;
 				}
 
-				bool operator==(const iterator& iter)
+				bool operator==(const iterator& iter) noexcept
 				{
 					if (!iter.current && !current) return true;
 					return iter.split == split && iter.index == index;
 				}
 
-				bool operator!=(const iterator& iter)
+				bool operator!=(const iterator& iter) noexcept
 				{
 					if (!iter.current && !current) {
 						return false;
@@ -868,7 +861,7 @@ namespace pcre2 {
 			}
 		};
 
-		inline auto split(this const wregex& self, std::wstring_view haystack) -> Split
+		inline auto split(this const wregex& self, std::wstring_view haystack) noexcept -> Split
 		{
 			return Split{ .finder = self.find_iter(haystack), .last = 0 };
 		}
@@ -912,13 +905,13 @@ namespace pcre2 {
 					return self;
 				}
 
-				bool operator==(const iterator& iter)
+				bool operator==(const iterator& iter) noexcept
 				{
 					if (!iter.current && !current) return true;
 					return iter.split == split && iter.index == index;
 				}
 
-				bool operator!=(const iterator& iter)
+				bool operator!=(const iterator& iter) noexcept
 				{
 					if (!iter.current && !current) {
 						return false;
@@ -943,9 +936,9 @@ namespace pcre2 {
 				int index;
 			};
 
-			auto begin() { return iterator(this, next()); };
+			auto begin() noexcept { return iterator(this, next()); };
 
-			auto end() { return iterator(this); };
+			auto end() noexcept { return iterator(this); };
 
 			auto next(this SplitN& self) -> std::optional<std::expected<std::wstring_view, Error>>
 			{
@@ -970,20 +963,20 @@ namespace pcre2 {
 				}
 			}
 
-			auto size_hint(this const SplitN& self) -> std::tuple<size_t, std::optional<size_t>> 
+			auto size_hint(this const SplitN& self) -> std::tuple<size_t, std::optional<size_t>>
 			{
-				return std::make_tuple(0, std::optional(self.limit));
+				return std::make_tuple(0, self.limit);
 			}
 		};
 
 		inline auto splitn(
-					this const wregex& self,
-					std::wstring_view haystack,
-					size_t limit
-					) -> SplitN
+			this const wregex& self,
+			std::wstring_view haystack,
+			size_t limit
+		) noexcept -> SplitN
 		{
 			return SplitN{ Split{.finder = self.find_iter(haystack), .last = 0 }, limit };
-				
+
 		}
 	};
 }

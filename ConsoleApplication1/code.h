@@ -164,5 +164,5 @@ struct Code {
 		else {
 			return 1 + static_cast<size_t>(count);
 		}
-	};
+	}
 };
