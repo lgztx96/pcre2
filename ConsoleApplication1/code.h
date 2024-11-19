@@ -89,7 +89,12 @@ struct Code {
 		return names;
 	}
 
-	inline auto as_ptr(this const Code& self) -> const pcre2_code_16*
+	inline auto as_ptr(this const Code& self) noexcept -> const pcre2_code_16*
+	{
+		return self.code;
+	}
+
+	explicit operator pcre2_code_16* (this const Code& self) noexcept
 	{
 		return self.code;
 	}

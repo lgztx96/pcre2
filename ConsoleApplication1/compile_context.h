@@ -25,6 +25,16 @@ struct CompileContext
 		pcre2_compile_context_free_16(context);
 	}
 
+	explicit operator pcre2_compile_context_16* (this const CompileContext& self) noexcept
+	{
+		return self.context;
+	}
+
+	inline auto as_mut_ptr(this const CompileContext& self) -> pcre2_compile_context_16*
+	{
+		return self.context;
+	}
+
 	/// Set the PCRE2 newline sequence.
 	///
 	/// Valid values are: PCRE2_NEWLINE_CR, PCRE2_NEWLINE_LF,
@@ -39,10 +49,5 @@ struct CompileContext
 		else {
 			return std::unexpected(Error::option(rc));
 		}
-	}
-
-	inline auto as_mut_ptr(this const CompileContext& self) -> pcre2_compile_context_16*
-	{
-		return self.context;
 	}
 };
