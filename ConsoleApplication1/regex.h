@@ -686,7 +686,7 @@ namespace pcre2 {
 			PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
 			PCRE2_SPTR16 replacement_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(replacement.data());
 			//pcre2_callout_enumerate_16
-			if (output.capacity() < subject.size()) output.resize(subject.size() + 1);
+			if (output.size() < subject.size()) output.resize(subject.size() + 1);
 			size_t outlen = output.size();
 
 			auto match_data = self.new_match_data();
@@ -706,29 +706,33 @@ namespace pcre2 {
 				replacement.size(),
 				reinterpret_cast<PCRE2_UCHAR16*>(output.data()),
 				&outlen);
-
-			if (rc < 0 && rc != PCRE2_ERROR_NOMEMORY)
-			{
-				return false;
+			if (rc >= 0) {
+				output.resize(outlen);
+				return true;
 			}
-
-			if (outlen > 1) {
+			else if (rc == PCRE2_ERROR_NOMEMORY)
+			{
 				output.resize(outlen);
 
 				rc = pcre2_substitute_16(self.code->as_ptr(),
 					subject_ptr,
 					subject.size(),
 					0,
-					options,
+					options,        
 					match_data->as_mut_ptr(),
 					nullptr,
-					replacement_ptr,
+					replacement_ptr,  
 					replacement.size(),
 					reinterpret_cast<PCRE2_UCHAR16*>(output.data()),
 					&outlen);
+
+				if (rc >= 0) {
+					output.resize(outlen);
+					return true;
+				}
 			}
 
-			return true;
+			return false;
 		}
 
 		static constexpr uint32_t SUBSTITUTE_MATCHED =
