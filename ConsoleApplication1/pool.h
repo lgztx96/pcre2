@@ -652,19 +652,23 @@ struct Pool
 			inner::Pool<T, F>::PoolGuard::put(value.value);
 		}
 
-		auto operator*(this const PoolGuard& self) -> T& {
+		auto operator*(this const PoolGuard& self) -> T&
+		{
 			return self.value.value_mut();
 		}
 
-		auto operator->(this const PoolGuard& self) -> T* {
+		auto operator->(this const PoolGuard& self) -> T*
+		{
 			return &self.value.value_mut();
 		}
 
-		auto deref(this const PoolGuard& self) -> const T& {
+		auto deref(this const PoolGuard& self) -> const T&
+		{
 			return self.value.value();
 		}
 
-		auto deref_mut(this PoolGuard& self) -> T& {
+		auto deref_mut(this PoolGuard& self) -> T&
+		{
 			return self.value.value_mut();
 		}
 	};
