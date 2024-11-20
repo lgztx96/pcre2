@@ -677,16 +677,16 @@ namespace pcre2 {
 			return CaptureMatches{ .re = self, .subject = subject, .last_end = 0, .last_match = std::nullopt };
 		}
 
-		bool substitute_with_options(
+		auto substitute_with_options(
 			this const wregex& self,
 			std::wstring_view subject,
 			std::wstring_view replacement,
 			uint32_t options,
-			std::wstring& output) {
+			std::wstring& output) noexcept -> bool {
 			PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
 			PCRE2_SPTR16 replacement_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(replacement.data());
 			//pcre2_callout_enumerate_16
-			output.resize(subject.size() + 1);
+			if (output.capacity() < subject.size()) output.resize(subject.size() + 1);
 			size_t outlen = output.size();
 
 			auto match_data = self.new_match_data();
@@ -976,7 +976,6 @@ namespace pcre2 {
 		) noexcept -> SplitN
 		{
 			return SplitN{ Split{.finder = self.find_iter(haystack), .last = 0 }, limit };
-
 		}
 	};
 }

@@ -47,7 +47,8 @@ int main()
 			}
 		}
 		std::wstring s;
-		regex->substitute(text, L"v${0}v", s);
+		regex->substitute_all(text, L"v${0}v", s);
+		std::wcout << s;
 		return 0;
 		boost::wsmatch match;
 

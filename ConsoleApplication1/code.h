@@ -72,18 +72,8 @@ struct Code {
 		for (size_t i = 0; i < name_count; i++) {
 			auto entry = table.subspan(i * size, (i + 1) * size - i * size);
 			auto name = entry.subspan(1);
-			auto nulat = std::distance(name.cbegin(), std::find(name.cbegin(), name.cend(), 0));
-			/* auto nulat = name
-				 .iter()
-				 .position(| &b | b == 0)
-				 .expect("a NUL in name table entry");*/
-				 // auto index = (static_cast<size_t>(entry[0]) << 8 | static_cast<size_t>(entry[1]));
 			auto index = static_cast<uint32_t>(entry[0]);
-			names[index] = std::wstring(std::bit_cast<const wchar_t*>(name.data()), nulat);
-			//.map(Some)
-			// We require our pattern to be valid UTF-8, so all capture
-			// names should also be valid UTF-8.
-			//.expect("valid UTF-8 for capture name");
+			names[index] = std::wstring(std::bit_cast<const wchar_t*>(name.data()));
 		}
 
 		return names;
