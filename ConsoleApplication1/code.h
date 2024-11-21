@@ -57,12 +57,6 @@ struct Code {
 
 	auto capture_names(this const Code& self) -> std::vector<std::wstring>
 	{
-		// This is an object lesson in why C sucks. All we need is a map from
-		// a name to a number, but we need to go through all sorts of
-		// shenanigans to get it. In order to verify this code, see
-		// https://www.pcre.org/current/doc/html/pcre2api.html
-		// and search for PCRE2_INFO_NAMETABLE.
-
 		auto name_count = *self.name_count();
 		auto size = *self.name_entry_size();
 		std::span<const wchar_t> table(std::bit_cast<const wchar_t*>(*self.raw_name_table()), name_count * size);
