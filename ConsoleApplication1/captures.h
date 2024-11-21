@@ -1,9 +1,10 @@
 ﻿#pragma once
-#include "capture_locations.h"
+//import "capture_locations.h"
 #include "config.h"
-#include <map>
-#include <string>
-#include <string_view>
+import <map>;
+import <string>;
+import <string_view>;
+import pcre;
 
 struct Captures
 {
@@ -23,7 +24,7 @@ struct Captures
 
 	auto get(this const Captures& self, size_t i) noexcept -> std::optional<Match>
 	{
-		return self.locs.get(i).transform([&](auto v) { auto& [s, e] = v; return Match(self.subject, s, e); });
+		return self.locs.get(i).transform([&](const auto& r) { auto& [s, e] = r; return Match(self.subject, s, e); });
 	}
 
 	auto name(this const Captures& self, std::wstring_view name) -> std::optional<Match>

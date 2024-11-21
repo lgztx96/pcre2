@@ -1,10 +1,11 @@
 ﻿#pragma once
-#include <cassert>
+
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 0
-#include <pcre2.h>
-#include <expected>
+//#include <pcre2.h>
 #include "error.h"
+import <cassert>;
+import <expected>;
 
 struct CompileContext
 {
@@ -14,7 +15,7 @@ struct CompileContext
 	/// If memory could not be allocated for the context, then this panics.
 	CompileContext() {
 		auto ctx = pcre2_compile_context_create_16(nullptr);
-		assert(ctx, "could not allocate compile context");
+		//assert(ctx, "could not allocate compile context");
 		context = ctx;
 	}
 

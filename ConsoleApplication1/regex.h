@@ -1,15 +1,17 @@
 ﻿#pragma once
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 0
-#include "capture_locations.h"
+
+//import "capture_locations.h"
 #include "regex_builder.h"
 #include "captures.h"
 #include "code.h"
 #include "config.h"
 #include "match_data.h"
-#include <map>
 #include <pcre2.h>
 #include "pool.h"
+import <map>;
+import pcre;
 
 namespace pcre2 {
 
@@ -241,7 +243,7 @@ namespace pcre2 {
 					{
 						if (b) {
 							auto ovector = locs.data->ovector();
-							return std::make_optional<Match>(subject.data(), ovector[0], ovector[1]);
+							return Match(subject.data(), ovector[0], ovector[1]);
 						}
 						return std::nullopt;
 					});
@@ -285,22 +287,22 @@ namespace pcre2 {
 				//.expect("PCRE2_NEWLINE_ANYCRLF is a legal value");
 			}
 
-			auto code = *Code::make(pattern, options, std::move(ctx));
+			auto code = Code::make(pattern, options, std::move(ctx));
 			switch (config.jit)
 			{
 			case JITChoice::Never:
 				break;
 			case JITChoice::Always:
-				code->jit_compile();
+				(*code)->jit_compile();
 				break;
 			case JITChoice::Attempt:
-				if (auto rc = code->jit_compile(); !rc) {
+				if (auto rc = (*code)->jit_compile(); !rc) {
 					//log::debug!("JIT compilation failed: {}", err);
 				}
 				break;
 			}
 
-			auto capture_names = code->capture_names();
+			auto capture_names = (*code)->capture_names();
 			auto idx = std::make_unique<std::map<std::wstring, size_t, std::less<void>>>();
 			for (size_t i = 0; i < capture_names.size(); i++)
 			{
@@ -310,12 +312,12 @@ namespace pcre2 {
 				}
 			}
 
-			auto match_data = MatchDataPool::create([v = code.get(), c = config.match_config]()
+			auto match_data = MatchDataPool::create([v = code->get(), c = config.match_config]()
 				{
 					return new MatchData(c, v);
 				});
 
-			return wregex(config, pattern, std::move(code),
+			return wregex(config, pattern, std::move(*code),
 				std::make_unique<std::vector<std::wstring>>(std::move(capture_names)),
 				std::move(idx),
 				std::move(match_data)
@@ -450,8 +452,6 @@ namespace pcre2 {
 				std::optional<std::expected<Match, Error>> current;
 				int index;
 			};
-
-			static_assert(std::input_iterator<iterator>);
 
 			auto begin() { return iterator(this, next()); };
 
@@ -683,8 +683,8 @@ namespace pcre2 {
 			std::wstring_view replacement,
 			uint32_t options,
 			std::wstring& output) noexcept -> bool {
-			PCRE2_SPTR16 subject_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(subject.data());
-			PCRE2_SPTR16 replacement_ptr = reinterpret_cast<const PCRE2_UCHAR16*>(replacement.data());
+			PCRE2_SPTR16 subject_ptr = std::bit_cast<const PCRE2_UCHAR16*>(subject.data());
+			PCRE2_SPTR16 replacement_ptr = std::bit_cast<const PCRE2_UCHAR16*>(replacement.data());
 			//pcre2_callout_enumerate_16
 			if (output.size() < subject.size()) output.resize(subject.size() + 1);
 			size_t outlen = output.size();
@@ -704,7 +704,7 @@ namespace pcre2 {
 				nullptr,
 				replacement_ptr,
 				replacement.size(),
-				reinterpret_cast<PCRE2_UCHAR16*>(output.data()),
+				std::bit_cast<PCRE2_UCHAR16*>(output.data()),
 				&outlen);
 			if (rc >= 0) {
 				output.resize(outlen);
@@ -723,7 +723,7 @@ namespace pcre2 {
 					nullptr,
 					replacement_ptr,  
 					replacement.size(),
-					reinterpret_cast<PCRE2_UCHAR16*>(output.data()),
+					std::bit_cast<PCRE2_UCHAR16*>(output.data()),
 					&outlen);
 
 				if (rc >= 0) {

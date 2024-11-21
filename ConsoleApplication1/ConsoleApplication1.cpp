@@ -1,11 +1,11 @@
 ﻿// ConsoleApplication1.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
 
-#include <iostream>
+import <iostream>;
 #include "regex_builder.h"
 #include "regex.h"
-#include <print>
-#include <boost/regex.hpp>
+import <print>;
+#include  <boost/regex.hpp>
 
 // https://github.com/Homebrodot/Godot/blob/5eccbcefabba0f6ead2294877db3ff4a92ece068/modules/regex/regex.cpp#L374
 int main() 
@@ -21,7 +21,7 @@ int main()
 
 		for (auto i = 0; i < 100000; i++)
 		{
-			auto rc = regex->is_match_at(text, 0).value();
+			auto rc = regex->is_match(text);
 		}
 
 		auto end = std::chrono::high_resolution_clock::now();
@@ -39,18 +39,10 @@ int main()
 		c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
 		std::println("boost {}ms", c);
-		for (const auto& v : regex->splitn(text, 5)) {
-			if (v) 
-			{ 
-				std::wstring s(v->data(), v->size());
-				std::wcout << s << std::endl;
-			}
-		}
 		std::wstring s;
 		regex->substitute_all(text, L"v${0}v", s);
 		std::wcout << s;
 		return 0;
-		boost::wsmatch match;
 
 		if (auto rc = regex->is_match(text); rc && *rc) {
 			std::wcout << L"Pattern matches the text!" << std::endl;

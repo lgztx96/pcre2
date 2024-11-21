@@ -1,8 +1,12 @@
 ﻿#pragma once
-#include <array>
-#include <cassert>
-#include <optional>
-#include <string>
+#define PCRE2_STATIC
+#define PCRE2_CODE_UNIT_WIDTH 0
+//#include <pcre2.h>
+import <array>;
+import <bit>;
+import <cassert>;
+import <optional>;
+import <string>;
 
 enum class ErrorKind 
 {
@@ -63,12 +67,12 @@ struct Error
 		auto rc = pcre2_get_error_message_16(self.code, buf.data(), buf.size());
 		// Errors are only ever constructed from codes reported by PCRE2, so
 		// our code should always be valid.
-		assert(rc != PCRE2_ERROR_BADDATA, "used an invalid error code");
+		//assert(rc != PCRE2_ERROR_BADDATA, "used an invalid error code");
 		// PCRE2 docs claim 120 bytes is enough, and we use more, so...
-		assert(rc != PCRE2_ERROR_NOMEMORY, "buffer size too small");
+		//assert(rc != PCRE2_ERROR_NOMEMORY, "buffer size too small");
 		// Sanity check that we do indeed have a non-negative result. 0 is OK.
-		assert(rc >= 0, "expected non-negative but got {}", rc);
-		return { reinterpret_cast<const wchar_t*>(buf.data()), static_cast<size_t>(rc) };
+		//assert(rc >= 0, "expected non-negative but got {}", rc);
+		return { std::bit_cast<const wchar_t*>(buf.data()), static_cast<size_t>(rc) };
 	}
 
 	inline constexpr const wchar_t* description()

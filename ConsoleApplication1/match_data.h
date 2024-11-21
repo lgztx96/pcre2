@@ -1,8 +1,13 @@
 ﻿#pragma once
+#define PCRE2_STATIC
+#define PCRE2_CODE_UNIT_WIDTH 0
+#include <pcre2.h>
+#include "config.h"
+#include "code.h"
+import <optional>;
 
 struct MatchData
 {
-	MatchConfig config;
 	pcre2_match_context_16* match_context;
 	pcre2_match_data_16* match_data;
 	std::optional<pcre2_jit_stack_16*> jit_stack;
@@ -12,15 +17,15 @@ struct MatchData
 	MatchData(const MatchData&) = delete;
 	MatchData operator=(const MatchData&) = delete;
 
-	MatchData(MatchConfig config, const Code* code) : config(config)
+	MatchData(const MatchConfig& config, const Code* code)
 	{
 		match_context = pcre2_match_context_create_16(nullptr);
-		assert(match_context, "failed to allocate match context");
+		//assert(match_context, "failed to allocate match context");
 
 		match_data = pcre2_match_data_create_from_pattern_16(
 			code->as_ptr(),
 			nullptr);
-		assert(match_data, "failed to allocate match data block");
+		//assert(match_data, "failed to allocate match data block");
 
 		jit_stack = [&]() -> std::optional<pcre2_jit_stack_16*> {
 			if (!code->compiled_jit) {
@@ -32,7 +37,7 @@ struct MatchData
 					*max,
 					nullptr
 				);
-				assert(!stack, "failed to allocate JIT stack");
+				//assert(!stack, "failed to allocate JIT stack");
 
 				pcre2_jit_stack_assign_16(
 					match_context,
@@ -46,7 +51,7 @@ struct MatchData
 			}();
 
 		ovector_ptr = pcre2_get_ovector_pointer_16(match_data);
-		assert(ovector_ptr, "got NULL ovector pointer");
+		//assert(ovector_ptr, "got NULL ovector pointer");
 		ovector_count = pcre2_get_ovector_count_16(match_data);
 	}
 
@@ -126,7 +131,7 @@ struct MatchData
 			// We always create match data with
 			// pcre2_match_data_create_from_pattern, so the ovector should
 			// always be big enough.
-			assert(rc != 0, "ovector should never be too small");
+			//assert(rc != 0, "ovector should never be too small");
 			return std::unexpected(Error::matching(rc));
 		}
 	}

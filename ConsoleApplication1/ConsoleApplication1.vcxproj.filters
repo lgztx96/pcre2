@@ -18,6 +18,9 @@
     <ClCompile Include="ConsoleApplication1.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="locations.ixx">
+      <Filter>头文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="regex.h">
@@ -42,9 +45,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="captures.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="capture_locations.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pool.h">

@@ -1,12 +1,15 @@
-﻿#pragma once
+﻿module;
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 0
 #include "code.h"
 #include "match_data.h"
-#include <optional>
 #include <pcre2.h>
+#include <tuple>
+#include <optional>
 
-struct CaptureLocations 
+export module pcre;
+
+export struct CaptureLocations
 {
 	Code* code;
 	std::unique_ptr<MatchData> data;
@@ -26,16 +29,16 @@ struct CaptureLocations
 	{
 		auto ovec = self.data->ovector();
 		size_t index = i * 2;
-		if (index < ovec.size()) 
+		if (index < ovec.size())
 		{
 			if (auto s = ovec[index]; s != PCRE2_UNSET)
 			{
 				index = i * 2 + 1;
-				if (index < ovec.size()) 
+				if (index < ovec.size())
 				{
 					if (auto e = ovec[index]; e != PCRE2_UNSET)
 					{
-						return std::make_optional<std::tuple<size_t, size_t>>(s, e);
+						return std::make_tuple(s, e);
 					}
 				}
 			}

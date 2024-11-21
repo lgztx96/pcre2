@@ -2,14 +2,14 @@
 
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 0
+#include <pcre2.h>
 #include "code.h"
 #include "compile_context.h"
 #include "config.h"
 #include "error.h"
 #include "match_data.h"
-#include <expected>
-#include <map>
-#include <pcre2.h>
+import <expected>;
+import <map>;
 
 struct RegexOptions
 {

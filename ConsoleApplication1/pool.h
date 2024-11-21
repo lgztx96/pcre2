@@ -51,13 +51,13 @@ being quite expensive.
 /// perhaps the worst choices. Of the remaining two choices, whether you use
 /// this `Pool` or thread through a cache explicitly in your code is a matter
 /// of taste and depends on your code architecture.
-#include <atomic>
-#include <vector>
-#include <optional>
-#include <memory>
-#include <mutex>
-#include <expected>
-#include <functional>
+import <atomic>;
+import <vector>;
+import <optional>;
+import <memory>;
+import <mutex>;
+import <expected>;
+import <functional>;
 
 namespace inner
 {
@@ -453,26 +453,6 @@ namespace inner
 			}
 		}
 
-		//static auto new1(F create) -> Pool<T, F>
-		//{
-		//	// MSRV(1.63): Mark this function as 'const'. I've arranged the
-		//	// code such that it should "just work." Then mark the public
-		//	// 'Pool::new' method as 'const' too. (The alloc-only Pool::new
-		//	// is already 'const', so that should "just work" too.) The only
-		//	// thing we're waiting for is Mutex::new to be const.
-		//	std::vector<CacheLine<Mutex<std::vector<std::unique_ptr<T>>>>> stacks;
-		//	stacks.reserve(MAX_POOL_STACKS);
-
-		//	for (size_t i = 0; i < stacks.capacity(); i++)
-		//	{
-		//		stacks.push_back(CacheLine(Mutex(std::vector<std::unique_ptr<T>>())));
-		//	}
-
-		//	auto owner = std::atomic<size_t>(THREAD_ID_UNOWNED);
-		//	auto owner_val = std::nullopt;// UnsafeCell::new(None); // init'd on first access
-		//	return Pool{ create, stacks, THREAD_ID_UNOWNED, /*owner,*/ owner_val };
-		//}
-
 		auto get(this Pool& self) -> PoolGuard
 		{
 			// Our fast path checks if the caller is the thread that "owns"
@@ -526,7 +506,7 @@ namespace inner
 					// the owner and that this is the only such thread that
 					// can reach here. Thus, there is no data race.
 
-					self.owner_val = std::move(std::unique_ptr<T>(self.create()));// std::invoke(self.create); self.create();
+					self.owner_val = std::move(std::unique_ptr<T>(self.create()));
 					return self.guard_owned(caller);
 				}
 			}
@@ -556,11 +536,7 @@ namespace inner
 				// Unlock the mutex guarding the stack before creating a fresh
 				// value since we no longer need the stack.
 				stack.unlock();
-				auto value = std::unique_ptr<T>
-					(
-						self.create()
-						//(self.create)()
-					);
+				std::unique_ptr<T> value(self.create());
 				return self.guard_stack(std::move(value));
 			}
 			// We're only here if we could get access to our stack, so just

@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <optional>
-#include <string_view>
+import <optional>;
+import <string_view>;
 
 enum class JITChoice 
 {
@@ -74,27 +74,3 @@ struct Match
 		return std::wstring_view(self.subject + self.end);
 	}
 };
-//namespace meta {
-//
-//
-//struct Split {
-//	std::wstring_view haystack;
-//	meta::Split it;
-//
-//inline auto next(this Split& self)-> std::optional<std::wstring_view> {
-//	return self.it.next().map(| span | &self.haystack[span]);
-//}
-//};
-//
-//struct SplitN {
-//	std::wstring_view haystack;
-//	meta::SplitN it;
-//
-//	inline auto next(this SplitN& self) -> std::optional<std::wstring_view> {
-//		return self.it.next().map(| span | &self.haystack[span]);
-//	}
-//
-//inline auto size_hint(this SplitN& self) -> std::tuple<size_t, std::optional<size_t>> {
-//	return self.it.size_hint();
-//	}
-//};

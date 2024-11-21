@@ -1,14 +1,14 @@
 ﻿#pragma once
 #define PCRE2_STATIC
 #define PCRE2_CODE_UNIT_WIDTH 0
+#include <pcre2.h>
 #include "compile_context.h"
 #include "error.h"
-#include <bit>
-#include <expected>
-#include <memory>
-#include <pcre2.h>
-#include <span>
-#include <vector>
+import <bit>;
+import <expected>;
+import <memory>;
+import <span>;
+import <vector>;
 
 struct Code {
 	pcre2_code_16* code;
@@ -67,7 +67,7 @@ struct Code {
 		auto size = *self.name_entry_size();
 		std::span<const wchar_t> table(std::bit_cast<const wchar_t*>(*self.raw_name_table()), name_count * size);
 
-		auto names = std::vector<std::wstring>();
+		std::vector<std::wstring> names;
 		names.resize(*self.capture_count());
 		for (size_t i = 0; i < name_count; i++) {
 			auto entry = table.subspan(i * size, (i + 1) * size - i * size);
