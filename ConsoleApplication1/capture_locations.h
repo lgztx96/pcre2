@@ -6,46 +6,48 @@
 #include <optional>
 #include <pcre2.h>
 
-struct CaptureLocations 
-{
-	Code* code;
-	std::unique_ptr<MatchData> data;
-
-	CaptureLocations(Code* code, std::unique_ptr<MatchData> data) noexcept : code(code), data(std::move(data)) {}
-
-	CaptureLocations(const CaptureLocations& rhs) = delete;
-
-	CaptureLocations(CaptureLocations&& rhs) noexcept : code(rhs.code), data(std::move(rhs.data)) {}
-
-	CaptureLocations operator=(CaptureLocations&& rhs) noexcept
+namespace pcre2 {
+	struct CaptureLocations
 	{
-		return CaptureLocations(std::move(rhs));
-	}
+		Code* code;
+		std::unique_ptr<MatchData> data;
 
-	auto get(this const CaptureLocations& self, size_t i) noexcept -> std::optional<std::tuple<size_t, size_t>>
-	{
-		auto ovec = self.data->ovector();
-		size_t index = i * 2;
-		if (index < ovec.size()) 
+		CaptureLocations(Code* code, std::unique_ptr<MatchData> data) noexcept : code(code), data(std::move(data)) {}
+
+		CaptureLocations(const CaptureLocations& rhs) = delete;
+
+		CaptureLocations(CaptureLocations&& rhs) noexcept : code(rhs.code), data(std::move(rhs.data)) {}
+
+		CaptureLocations operator=(CaptureLocations&& rhs) noexcept
 		{
-			if (auto s = ovec[index]; s != PCRE2_UNSET)
+			return CaptureLocations(std::move(rhs));
+		}
+
+		auto get(this const CaptureLocations& self, size_t i) noexcept -> std::optional<std::tuple<size_t, size_t>>
+		{
+			auto ovec = self.data->ovector();
+			size_t index = i * 2;
+			if (index < ovec.size())
 			{
-				index = i * 2 + 1;
-				if (index < ovec.size()) 
+				if (auto s = ovec[index]; s != PCRE2_UNSET)
 				{
-					if (auto e = ovec[index]; e != PCRE2_UNSET)
+					index = i * 2 + 1;
+					if (index < ovec.size())
 					{
-						return std::make_optional<std::tuple<size_t, size_t>>(s, e);
+						if (auto e = ovec[index]; e != PCRE2_UNSET)
+						{
+							return std::make_optional<std::tuple<size_t, size_t>>(s, e);
+						}
 					}
 				}
 			}
+
+			return std::nullopt;
 		}
 
-		return std::nullopt;
-	}
-
-	inline auto len(this const CaptureLocations& self) noexcept -> size_t
-	{
-		return self.data->ovector().size() / 2;
-	}
-};
+		inline auto len(this const CaptureLocations& self) noexcept -> size_t
+		{
+			return self.data->ovector().size() / 2;
+		}
+	};
+}

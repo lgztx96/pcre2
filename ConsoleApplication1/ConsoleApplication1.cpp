@@ -13,7 +13,7 @@ int main()
 	try 
 	{
 		const auto regex = pcre2::wregex::jit_compile(L"(\\d+)-(\\d+)-(\\d+)");
-		constexpr auto text = L"2024-05-23-2025-06-27--2025-06-27---2025-06-27----2025-06-27-----2025-06-27------2025-06-27-------2025-06-27";
+		static constexpr auto text = L"2024-05-23-2025-06-27--2025-06-27---2025-06-27----2025-06-27-----2025-06-27------2025-06-27-------2025-06-27";
 
 		boost::wregex re(L"(\\d+)-(\\d+)-(\\d+)");
 
@@ -21,34 +21,37 @@ int main()
 
 		for (auto i = 0; i < 100000; i++)
 		{
-			auto rc = regex->is_match_at(text, 0).value();
+			auto rc = regex->is_match_at(text, 0);
+			assert(rc && *rc);
 		}
 
 		auto end = std::chrono::high_resolution_clock::now();
+		auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::println("pcre {} ms", time);
 
-		auto c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-		std::println("pcre {} ms", c);
 		start = std::chrono::high_resolution_clock::now();
 
 		for (auto i = 0; i < 100000; i++)
 		{
-			auto k = boost::regex_search(text, re);
+			assert(boost::regex_search(text, re));
 		}
-		end = std::chrono::high_resolution_clock::now();
-		c = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-		std::println("boost {}ms", c);
-		for (const auto& v : regex->splitn(text, 5)) {
-			if (v) 
+		end = std::chrono::high_resolution_clock::now();
+		time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::println("boost {}ms", time);
+
+		for (const auto& v : regex->splitn(text, 5)) 
+		{
+			if (v.has_value()) 
 			{ 
 				std::wstring s(v->data(), v->size());
 				std::wcout << s << std::endl;
 			}
 		}
-		std::wstring s;
-		regex->substitute_all(text, L"v${0}v", s);
-		std::wcout << s;
+		std::wstring output;
+		regex->substitute_all(text, L"v${0}v", output);
+		std::wcout << output;
+
 		return 0;
 		boost::wsmatch match;
 
@@ -59,7 +62,8 @@ int main()
 			std::wcout << L"Pattern does not match the text." << std::endl;
 		}
 
-		if (auto match = regex->find(text); match.has_value() && match->has_value()) {
+		if (auto match = regex->find(text); match.has_value() && match->has_value())
+		{
 			// std::wcout << L"First match: " << text.substr((*match)->start, (*match)->end - (*match)->start) << std::endl;
 		}
 		else {
@@ -81,8 +85,8 @@ int main()
 		}
 
 	}
-	catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+	catch (const std::exception& ex) {
+		std::cerr << ex.what() << std::endl;
 	}
 
 	return 0;

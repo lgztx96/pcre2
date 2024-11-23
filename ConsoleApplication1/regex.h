@@ -324,7 +324,12 @@ namespace pcre2 {
 
 		inline auto as_str(this const wregex& self) -> std::wstring_view
 		{
-			self.pattern;
+			return self.pattern;
+		}
+
+		operator std::wstring_view(this const wregex& self) noexcept
+		{
+			return self.pattern;
 		}
 
 		auto captures_len(this const wregex& self) -> size_t

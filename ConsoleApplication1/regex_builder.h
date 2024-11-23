@@ -11,80 +11,83 @@
 #include <map>
 #include <pcre2.h>
 
-struct RegexOptions
-{
-public:
-	Config config;
+namespace pcre2 {
 
-	RegexOptions& caseless(this auto& self, bool yes)
+	struct RegexOptions
 	{
-		self.config.caseless = yes;
-		return self;
-	}
+	public:
+		Config config;
 
-	RegexOptions& dotall(this auto& self, bool yes)
-	{
-		self.config.dotall = yes;
-		return self;
-	}
-
-	RegexOptions& extended(this auto& self, bool yes)
-	{
-		self.config.extended = yes;
-		return self;
-	}
-
-	RegexOptions& multi_line(this auto& self, bool yes)
-	{
-		self.config.multi_line = yes;
-		return self;
-	}
-
-	RegexOptions& crlf(this auto& self, bool yes)
-	{
-		self.config.crlf = yes;
-		return self;
-	}
-
-	RegexOptions& ucp(this auto& self, bool yes)
-	{
-		self.config.ucp = yes;
-		return self;
-	}
-
-	RegexOptions& utf(this auto& self, bool yes)
-	{
-		self.config.utf = yes;
-		return self;
-	}
-
-	RegexOptions& jit(this auto& self, bool yes)
-	{
-		if (yes) {
-			self.config.jit = JITChoice::Always;
+		RegexOptions& caseless(this auto& self, bool yes)
+		{
+			self.config.caseless = yes;
+			return self;
 		}
-		else {
-			self.config.jit = JITChoice::Never;
-		}
-		return self;
-	}
 
-	RegexOptions& jit_if_available(this auto& self, bool yes)
-	{
-		if (yes) {
-			self.config.jit = JITChoice::Attempt;
+		RegexOptions& dotall(this auto& self, bool yes)
+		{
+			self.config.dotall = yes;
+			return self;
 		}
-		else {
-			self.config.jit = JITChoice::Never;
-		}
-		return self;
-	}
 
-	RegexOptions& max_jit_stack_size(
-		this RegexOptions& self,
-		std::optional<size_t> bytes
-	) {
-		self.config.match_config.max_jit_stack_size = bytes;
-		return self;
-	}
-};
+		RegexOptions& extended(this auto& self, bool yes)
+		{
+			self.config.extended = yes;
+			return self;
+		}
+
+		RegexOptions& multi_line(this auto& self, bool yes)
+		{
+			self.config.multi_line = yes;
+			return self;
+		}
+
+		RegexOptions& crlf(this auto& self, bool yes)
+		{
+			self.config.crlf = yes;
+			return self;
+		}
+
+		RegexOptions& ucp(this auto& self, bool yes)
+		{
+			self.config.ucp = yes;
+			return self;
+		}
+
+		RegexOptions& utf(this auto& self, bool yes)
+		{
+			self.config.utf = yes;
+			return self;
+		}
+
+		RegexOptions& jit(this auto& self, bool yes)
+		{
+			if (yes) {
+				self.config.jit = JITChoice::Always;
+			}
+			else {
+				self.config.jit = JITChoice::Never;
+			}
+			return self;
+		}
+
+		RegexOptions& jit_if_available(this auto& self, bool yes)
+		{
+			if (yes) {
+				self.config.jit = JITChoice::Attempt;
+			}
+			else {
+				self.config.jit = JITChoice::Never;
+			}
+			return self;
+		}
+
+		RegexOptions& max_jit_stack_size(
+			this RegexOptions& self,
+			std::optional<size_t> bytes
+		) {
+			self.config.match_config.max_jit_stack_size = bytes;
+			return self;
+		}
+	};
+}
