@@ -1,21 +1,22 @@
 ﻿// ConsoleApplication1.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
 
-#include <iostream>
-#include "regex_builder.h"
 #include "regex.h"
-#include <print>
+#include "regex_builder.h"
 #include <boost/regex.hpp>
+#include <iostream>
+#include <print>
 
 // https://github.com/Homebrodot/Godot/blob/5eccbcefabba0f6ead2294877db3ff4a92ece068/modules/regex/regex.cpp#L374
 int main() 
 {
 	try 
 	{
-		const auto regex = pcre2::wregex::jit_compile(L"(\\d+)-(\\d+)-(\\d+)");
+		static constexpr auto pattern = L"(\\d+)-(\\d+)-(\\d+)";
+		const auto regex = pcre2::wregex::jit_compile(pattern);
 		static constexpr auto text = L"2024-05-23-2025-06-27--2025-06-27---2025-06-27----2025-06-27-----2025-06-27------2025-06-27-------2025-06-27";
 
-		boost::wregex re(L"(\\d+)-(\\d+)-(\\d+)");
+		boost::wregex re(pattern);
 
 		auto start = std::chrono::high_resolution_clock::now();
 
@@ -27,7 +28,7 @@ int main()
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		std::println("pcre {} ms", time);
+		std::println("pcre {0} ms", time);
 
 		start = std::chrono::high_resolution_clock::now();
 
@@ -38,19 +39,19 @@ int main()
 
 		end = std::chrono::high_resolution_clock::now();
 		time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		std::println("boost {}ms", time);
+		std::println("boost {0}ms", time);
 
-		for (const auto& v : regex->splitn(text, 5)) 
+		for (const auto& view : regex->splitn(text, 5)) 
 		{
-			if (v.has_value()) 
+			if (view.has_value())
 			{ 
-				std::wstring s(v->data(), v->size());
-				std::wcout << s << std::endl;
+				std::wcout << *view << std::endl;
 			}
 		}
+
 		std::wstring output;
 		regex->substitute_all(text, L"v${0}v", output);
-		std::wcout << output;
+		std::wcout << output << std::endl;
 
 		return 0;
 		boost::wsmatch match;
@@ -69,23 +70,9 @@ int main()
 		else {
 			std::wcout << L"No match found!" << std::endl;
 		}
-
-		auto m = regex->captures_iter(text);
-
-		for (const auto& v : m) {
-			if (v) {
-				auto k = (*v)[L"year"];
-				auto k1 = (*v)[L"month"];
-				auto k2 = (*v)[L"day"];
-				//std::wcout << L"First match: " << v->subject.substr(v->start, v->end - v->start) << std::endl;
-				std::wcout << L"First match: " << k << std::endl;
-				std::wcout << L"First match: " << k1 << std::endl;
-				std::wcout << L"First match: " << k2 << std::endl;
-			}
-		}
-
 	}
-	catch (const std::exception& ex) {
+	catch (const std::exception& ex)
+	{
 		std::cerr << ex.what() << std::endl;
 	}
 
