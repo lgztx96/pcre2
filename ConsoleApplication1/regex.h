@@ -285,41 +285,44 @@ namespace pcre2 {
 				//.expect("PCRE2_NEWLINE_ANYCRLF is a legal value");
 			}
 
-			auto code = *Code::make(pattern, options, std::move(ctx));
-			switch (config.jit)
-			{
-			case JITChoice::Never:
-				break;
-			case JITChoice::Always:
-				code->jit_compile();
-				break;
-			case JITChoice::Attempt:
-				if (auto rc = code->jit_compile(); !rc) {
-					//log::debug!("JIT compilation failed: {}", err);
-				}
-				break;
-			}
+			return Code::make(pattern, options, std::move(ctx))
+				.transform([&](auto code) 
+					{
+						switch (config.jit)
+						{
+						case JITChoice::Never:
+							break;
+						case JITChoice::Always:
+							code->jit_compile();
+							break;
+						case JITChoice::Attempt:
+							if (auto rc = code->jit_compile(); !rc) {
+								//log::debug!("JIT compilation failed: {}", err);
+							}
+							break;
+						}
 
-			auto capture_names = code->capture_names();
-			auto idx = std::make_unique<std::map<std::wstring, size_t, std::less<void>>>();
-			for (size_t i = 0; i < capture_names.size(); i++)
-			{
-				if (auto name = capture_names[i]; !name.empty())
-				{
-					idx->emplace(name, i);
-				}
-			}
+						auto capture_names = code->capture_names();
+						auto idx = std::make_unique<std::map<std::wstring, size_t, std::less<void>>>();
+						for (size_t i = 0; i < capture_names.size(); i++)
+						{
+							if (auto name = capture_names[i]; !name.empty())
+							{
+								idx->emplace(name, i);
+							}
+						}
 
-			auto match_data = MatchDataPool::create([v = code.get(), c = config.match_config]()
-				{
-					return new MatchData(c, v);
-				});
+						auto match_data = MatchDataPool::create([v = code.get(), c = config.match_config]()
+							{
+								return new MatchData(c, v);
+							});
 
-			return wregex(config, pattern, std::move(code),
-				std::make_unique<std::vector<std::wstring>>(std::move(capture_names)),
-				std::move(idx),
-				std::move(match_data)
-			);
+						return wregex(config, pattern, std::move(code),
+							std::make_unique<std::vector<std::wstring>>(std::move(capture_names)),
+							std::move(idx),
+							std::move(match_data)
+						);
+					});
 		}
 
 		inline auto as_str(this const wregex& self) -> std::wstring_view
