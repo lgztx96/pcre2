@@ -281,12 +281,12 @@ namespace pcre2 {
 
 			auto ctx = std::make_unique<CompileContext>();
 			if (config.crlf) {
-				ctx->set_newline(PCRE2_NEWLINE_ANYCRLF);
-				//.expect("PCRE2_NEWLINE_ANYCRLF is a legal value");
+				auto rc = ctx->set_newline(PCRE2_NEWLINE_ANYCRLF);
+				if (!rc) return std::unexpected(rc.error());
 			}
 
-			return Code::make(pattern, options, std::move(ctx))
-				.transform([&](auto code) 
+			return Code::make_unique(pattern, options, std::move(ctx))
+				.transform([&](auto code) -> wregex
 					{
 						switch (config.jit)
 						{
@@ -312,9 +312,10 @@ namespace pcre2 {
 							}
 						}
 
-						auto match_data = MatchDataPool::create([v = code.get(), c = config.match_config]()
+						auto match_data = MatchDataPool::create(
+							[code = code.get(), config = config.match_config]()
 							{
-								return new MatchData(c, v);
+								return new MatchData(config, code);
 							});
 
 						return wregex(config, pattern, std::move(code),

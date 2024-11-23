@@ -20,7 +20,7 @@ namespace pcre2 {
 			pcre2_code_free_16(code);
 		}
 
-		static auto make(
+		static auto make_unique(
 			std::wstring_view pattern,
 			uint32_t options,
 			std::unique_ptr<CompileContext> ctx
